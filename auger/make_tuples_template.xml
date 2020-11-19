@@ -1,0 +1,38 @@
+<Request>
+  <Email email="sebouh.paul@gmail.com" request="true" job="true"/>
+  <Project name="clas12"/>
+  <Track name="debug"/>
+  <Name name="make_tuples"/>
+
+
+  <Variable name="clas12root" value="/group/clas12/packages/clas12root/1.6/bin/clas12root"/>
+<List name="inputfile">INPUT_FILES</List>
+
+  <ForEach list="inputfile">
+    
+    <Job>
+
+      <Memory space="400" unit="MB"/>
+      <TimeLimit time="10" unit="minutes"/>
+      <!-- Properties overridden here -->
+
+
+
+      <Command><![CDATA[
+        source ~/.cshrc
+	source /group/clas12/packages/setup.csh
+	module load clas12/pro
+        echo ${inputfile}
+	cp ~/sidis_tuples/src/SidisTuples.C .
+	mkdir /work/clas12/spaul/tmp;
+	clas12root -lbq SidisTuples.C+ --in=${inputfile} --out=/work/clas12/spaul/tmp/`basename ${inputfile}`.root
+        
+      ]]></Command>
+
+
+    
+    </Job>
+  </ForEach>
+  
+
+</Request>
