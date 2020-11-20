@@ -79,6 +79,7 @@ double cut_evzmax = 1;//12;
 
 //double cut_Wmin  = 2;
 double cut_Q2min = 1;
+double cut_Wmin = 2;
 //double cut_ymax  = 0.8;
 
 double cut_dvzmin = -5;//-20;
@@ -252,7 +253,7 @@ void SidisTuples(){
        cout << "target is " << targetName << "." << endl;
        rcdb->close();
      } else{
-       E=10; //Idk what the actual beam energy is for MC
+       E=0; //get the beam energy later
      }
      
      
@@ -276,13 +277,14 @@ void SidisTuples(){
 
      //int max = 100000;
      while(c12.next()==true){
-       if(isMC){
+       if(isMC && E==0){
 	 auto dict = c12.getDictionary();
 	 if(dict.hasSchema("MC::Event")){
 	   auto schema = dict.getSchema("MC::Event");
 	   hipo::bank bank(schema);
 	   c12.getStructure(&bank);
 	   E = bank.getFloat(schema.getEntryOrder("ebeam"),0);
+	   beam = {0, 0, E, E};
 	 }
 	 if(dict.hasSchema("MC::Header")){
            auto schema = dict.getSchema("MC::Header");
@@ -433,7 +435,7 @@ void SidisTuples(){
 	 nu = (beam.E()-el.E());
 	 y = nu/E;
 	 
-	 if(useCuts && Q2<cut_Q2min)
+	 if(useCuts && (Q2<cut_Q2min || W<cut_Wmin))
            continue;
 	 
 	 //if(useCuts && y>cut_ymax)
