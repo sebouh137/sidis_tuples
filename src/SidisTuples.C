@@ -188,7 +188,7 @@ void SidisTuples(){
    tree = hadron_tree;
    leafx(nelectrons);
    leafx(E);leafx(helicity);leafx(e_p);leafx(e_th);leafx(e_ph);leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W);
-   leaf(h_chi2pid);leaf(h_pid);leaf(h_p);leaf(h_th);leaf(h_ph);leaf(h_DC1x);leaf(h_DC1y);leaf(h_DC2x);leaf(h_DC2y);leaf(h_DC3x);leaf(h_DC3y);leaf(dvz);leaf(z); leaf(h_cm_p);leaf(h_cm_th);leaf(h_cm_ph);
+   leaf(h_chi2pid);leaf(h_pid);leaf(h_p);leaf(h_th);leaf(h_ph);leaf(h_DC1x);leaf(h_DC1y);leaf(h_DC2x);leaf(h_DC2y);leaf(h_DC3x);leaf(h_DC3y);leaf(dvz);leaf(z); leaf(h_cm_p);leaf(h_cm_th);leaf(h_cm_ph);leaf(h_cm_eta);leaf(h_cm_pt);
    leaf(h_eta); leaf(dtime); leaf(dtime_corr);
    TTree* dihadron_tree = new TTree("dihadrons","dihadrons");
    tree = dihadron_tree;
@@ -198,12 +198,13 @@ void SidisTuples(){
    // macro creates fields for two hadrons
 #define leaf2(name) double h1_##name=0; tree->Branch((TString)"h1_"+#name,&h1_##name,(TString)"h1_"+#name+(TString)"/D"); double h2_##name=0; tree->Branch((TString)"h2_"+#name,&h2_##name,(TString)"h2_"+#name+(TString)"/D");
    leaf2(chi2pid);leaf2(pid);leaf2(p);leaf2(th);leaf2(ph);leaf2(z);leaf2(eta);
-   leaf2(cm_p);leaf2(cm_th);leaf2(cm_ph);
+   leaf2(cm_p);leaf2(cm_th);leaf2(cm_ph);leaf2(cm_eta);leaf2(cm_pt);
    leaf(pair_mass);
    leaf(diff_eta);
    leaf(diff_phi);
    leafx(nelectrons);
    leaf(diff_phi_cm);
+   leaf(diff_eta_cm);
    /*if(inputFile==TString())  {
      std::cout << " *** please provide a file name..." << std::endl;
      exit(0);
@@ -508,7 +509,9 @@ void SidisTuples(){
 	   toCM(cm, had,h_cm);
 	   h_cm_p = h_cm.P();
 	   h_cm_th = h_cm.Theta();
+	   h_cm_eta = h_cm.PseudoRapidity();
 	   h_cm_ph = h_cm.Phi();
+	   h_cm_pt = h_cm.Pt();
 	   //cout << h_cm_p << " " << pi_cm_th << " " << pi_cm_ph << endl;
 	   hadron_tree->Fill();
 	   
@@ -524,6 +527,8 @@ void SidisTuples(){
 	     h1_cm_p = h_cm_p;
 	     h1_cm_th = h_cm_th;
 	     h1_cm_ph =h_cm_ph;
+	     h1_cm_eta = h_cm_eta;
+	     h1_cm_pt = h_cm_pt;
 	     h1_z = z;
 	     h1 = had;
 	     found_leader = 1;
@@ -539,6 +544,8 @@ void SidisTuples(){
 	     h2_cm_p = h_cm_p;
 	     h2_cm_th =h_cm_th;
 	     h2_cm_ph =h_cm_ph;
+	     h2_cm_eta = h_cm_eta;
+	     h2_cm_pt = h_cm_pt;
 	     h2_z = z;
 	     h2 =had;
 	     found_second = 1;
@@ -554,12 +561,12 @@ void SidisTuples(){
 	     if(diff_phi>PI)
 	       diff_phi-=2*PI;
 	     
-	     diff_phi_cm = h1_cm_ph-h2_cm_ph;
+	     diff_phi_cm = h2_cm_ph-h1_cm_ph;
 	     if(diff_phi_cm<-PI)
 	       diff_phi_cm+=2*PI;
 	     if(diff_phi_cm>PI)
 	       diff_phi_cm-=2*PI;
-	     
+	     diff_eta_cm = h2_cm_eta-h1_cm_eta;
 	     dihadron_tree->Fill();
 	   } 
 	   
