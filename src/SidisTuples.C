@@ -101,6 +101,13 @@ void toCM(TLorentzVector cm, TLorentzVector p,TLorentzVector& result){
   //return result;
 }
 
+int charge(int pid){
+  if(pid == 11 || pid == -321 || pid == -211 || pid == -2212)
+    return -1;
+  else if (pid == -11 || pid == 321 || pid == 211 || pid == 2212)
+    return 1;
+  return 0;
+}
 
 
 void SidisTuples(){
@@ -181,6 +188,13 @@ void SidisTuples(){
    leaf(nKp);leaf(nKm);
    leaf(nh);
    leaf(z_tot);
+
+   //e_truth_pid, just in case a non-electron is misidentified as an electron
+   double e_truth_pid, e_truth_p, e_truth_th, e_truth_ph;
+   if(isMC){
+     leafx(e_truth_pid);leafx(e_truth_p);leafx(e_truth_th);leafx(e_truth_ph);
+   }
+
    //cout << "made leaves" <<endl;
    
    
@@ -190,10 +204,17 @@ void SidisTuples(){
    leafx(E);leafx(helicity);leafx(e_p);leafx(e_th);leafx(e_ph);leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W);
    leaf(h_chi2pid);leaf(h_pid);leaf(h_p);leaf(h_th);leaf(h_ph);leaf(h_DC1x);leaf(h_DC1y);leaf(h_DC2x);leaf(h_DC2y);leaf(h_DC3x);leaf(h_DC3y);leaf(dvz);leaf(z); leaf(h_cm_p);leaf(h_cm_th);leaf(h_cm_ph);leaf(h_cm_eta);leaf(h_cm_pt);
    leaf(h_eta); leaf(dtime); leaf(dtime_corr);
+
+   double h_truth_pid, h_truth_p, h_truth_th, h_truth_ph, h_truth_cm_p, h_truth_cm_th, h_truth_cm_ph, h_truth_cm_eta, h_truth_cm_pt;
+   if(isMC){
+     leafx(e_truth_pid);leafx(e_truth_p);leafx(e_truth_th);leafx(e_truth_ph);
+     leafx(h_truth_pid);leafx(h_truth_p);leafx(h_truth_th);leafx(h_truth_ph);leafx(h_truth_cm_p);leafx(h_truth_cm_th);leafx(h_truth_cm_ph);leafx(h_truth_cm_eta);leafx(h_truth_cm_pt);
+   }
+
    TTree* dihadron_tree = new TTree("dihadrons","dihadrons");
-   tree = dihadron_tree;
-   
+   tree = dihadron_tree;   
    leafx(E);leafx(helicity);leafx(e_p);leafx(e_th);leafx(e_ph);leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W); 
+   
 
    // macro creates fields for two hadrons
 #define leaf2(name) double h1_##name=0; tree->Branch((TString)"h1_"+#name,&h1_##name,(TString)"h1_"+#name+(TString)"/D"); double h2_##name=0; tree->Branch((TString)"h2_"+#name,&h2_##name,(TString)"h2_"+#name+(TString)"/D");
@@ -205,6 +226,19 @@ void SidisTuples(){
    leafx(nelectrons);
    leaf(diff_phi_cm);
    leaf(diff_eta_cm);
+
+
+   double h1_truth_pid, h1_truth_p, h1_truth_th, h1_truth_ph, h1_truth_cm_p, h1_truth_cm_th, h1_truth_cm_ph, h1_truth_cm_eta, h1_truth_cm_pt;
+   double h2_truth_pid, h2_truth_p, h2_truth_th, h2_truth_ph, h2_truth_cm_p, h2_truth_cm_th, h2_truth_cm_ph, h2_truth_cm_eta, h2_truth_cm_pt;
+   double diff_phi_cm_truth, diff_eta_cm_truth;
+   if(isMC){
+     leafx(e_truth_pid);leafx(e_truth_p);leafx(e_truth_th);leafx(e_truth_ph);
+     leafx(h1_truth_pid);leafx(h1_truth_p);leafx(h1_truth_th);leafx(h1_truth_ph);leafx(h1_truth_cm_p);
+     leafx(h1_truth_cm_th);leafx(h1_truth_cm_ph);leafx(h1_truth_cm_eta);leafx(h1_truth_cm_pt);
+     leafx(h2_truth_pid);leafx(h2_truth_p);leafx(h2_truth_th);leafx(h2_truth_ph);leafx(h2_truth_cm_p);
+     leafx(h2_truth_cm_th);leafx(h2_truth_cm_ph);leafx(h2_truth_cm_eta);leafx(h2_truth_cm_pt);
+     leafx(diff_phi_cm_truth);leafx(diff_eta_cm_truth);
+   }
    /*if(inputFile==TString())  {
      std::cout << " *** please provide a file name..." << std::endl;
      exit(0);
@@ -229,7 +263,6 @@ void SidisTuples(){
    //by default the target mass is that of the proton.
    TLorentzVector target(0,0,0,db->GetParticle(2212)->Mass());
    TLorentzVector el(0,0,0,db->GetParticle(11)->Mass());
-   TLorentzVector pr(0,0,0,db->GetParticle(2212)->Mass());
    TLorentzVector cm;
    cout << "proton mass is " << db->GetParticle(2212)->Mass() << endl;
    
@@ -369,6 +402,10 @@ void SidisTuples(){
        //cout << "helicity" << endl;
        TLorentzVector el(0,0,0,db->GetParticle(11)->Mass());
        
+       mcpar_ptr mcparts;
+       if(isMC){
+	 mcparts = c12.mcparts();
+       }
        /*if(electrons.size() == 2){
 	 cout << "electrons" << endl;
 	 cout << electrons[0]->par()->getP() <<endl;
@@ -391,7 +428,7 @@ void SidisTuples(){
 	 //  continue;
 	 //cout << "electron" << endl;
 
-	 //the electron mass is just a legend.  I could set this to zero and nothing would change.
+	 //the electron mass is a myth.  I could set this to zero and nothing would change.
 	 SetLorentzVector(el,electrons[i], 0.000511); 
 	 e_p = el.P();
 	 //cout<< "e_p: " << e_p <<" "<< el.P() << endl;
@@ -456,6 +493,38 @@ void SidisTuples(){
 	 TLorentzVector h2;
 
 	 z_tot = 0;
+	 TLorentzVector e_truth;
+	 TLorentzVector cm_truth;
+	 if(isMC){
+	   double best_match_dvecp = 0.07;
+	   e_truth_p = 0;
+	   e_truth_th = 0;
+	   e_truth_ph = 0;
+	   int kbest = -1;
+	   for(int k = 0; k<mcparts->getRows();k++){
+	     double diff = sqrt(pow(el.X()-mcparts->getPx(k),2)
+				+pow(el.Y()-mcparts->getPy(k),2)
+				+pow(el.Z()-mcparts->getPz(k),2))/el.P();
+	     
+	     //closest match which has negative charge
+	     if(diff < best_match_dvecp && charge(mcparts->getPid(k)) == -1){
+	       kbest = k;
+	     }
+	   }
+	   if(kbest >= 0){
+	     // the electron mass is a myth.  
+	     // I could set it to zero and nothing would change in the analysis
+	     e_truth.SetXYZM(mcparts->getPx(kbest),mcparts->getPy(kbest),mcparts->getPz(kbest),0.000511);
+	     e_truth_pid = mcparts->getPid(kbest);
+	     e_truth_p = e_truth.P();
+	     e_truth_th = e_truth.Theta();
+	     e_truth_ph = e_truth.Phi();
+	     cm_truth = beam+target-e_truth;
+	   }
+	 }
+	 
+
+
 	 bool found_leader = 0, found_second=0;
 	 //loop through all particles, only choosing charged hadrons. 
 	 for(int j =0; j<parts.size();j++){
@@ -513,7 +582,50 @@ void SidisTuples(){
 	   h_cm_ph = h_cm.Phi();
 	   h_cm_pt = h_cm.Pt();
 	   //cout << h_cm_p << " " << pi_cm_th << " " << pi_cm_ph << endl;
+	   
+	   TLorentzVector h_truth;
+	   if(isMC){
+	     double best_match_dvecp = 0.07;
+	     h_truth_p = 0;
+	     h_truth_th = 0;
+	     h_truth_ph = 0;
+	     h_truth_cm_p = 0;
+	     h_truth_cm_th = 0;
+	     h_truth_cm_eta = 0;
+	     h_truth_cm_ph = 0;
+	     h_truth_cm_pt = 0;
+	     int kbest = -1;
+	     for(int k = 0; k<mcparts->getRows();k++){
+	       double diff = sqrt(pow(had.X()-mcparts->getPx(k),2)
+				  +pow(had.Y()-mcparts->getPy(k),2)
+				  +pow(had.Z()-mcparts->getPz(k),2))/had.P();
+
+	       //closest match which has negative charge                                                                   
+	       if(diff < best_match_dvecp && db->GetParticle(h_pid)->Charge() == db->GetParticle(h->getPid())->Charge()){
+		 kbest = k;
+	       }
+	     }
+	     if(kbest >= 0){
+	       TLorentzVector h_truth_cm;
+	       
+	       h_truth.SetXYZM(mcparts->getPx(kbest),mcparts->getPy(kbest),mcparts->getPz(kbest),db->GetParticle(mcparts->getPid(kbest))->Mass());
+	       toCM(cm_truth, h_truth,h_truth_cm);
+	       h_truth_pid = mcparts->getPid(kbest);
+	       h_truth_p = h_truth.P();
+	       h_truth_th = h_truth.Theta();
+	       h_truth_ph = h_truth.Phi();
+	       
+	       h_truth_cm_p = h_truth_cm.P();
+	       h_truth_cm_th = h_truth_cm.Theta();
+	       h_truth_cm_eta = h_truth_cm.PseudoRapidity();
+	       h_truth_cm_ph = h_truth_cm.Phi();
+	       h_truth_cm_pt = h_truth_cm.Pt();
+	     }
+	   }
+	   
 	   hadron_tree->Fill();
+	   
+	   
 	   
 	   //leading pion in a high-z pion, and a second hadron of any type
 	   if(z > 0.5 && abs(h_pid)==211){
@@ -532,6 +644,18 @@ void SidisTuples(){
 	     h1_z = z;
 	     h1 = had;
 	     found_leader = 1;
+	     if(isMC){
+	       h1_truth_pid = h_truth_pid;
+               h1_truth_p = h_truth_p;
+               h1_truth_th = h_truth_th;
+               h1_truth_ph = h_truth_ph;
+
+	       h1_truth_cm_p = h_truth_cm_p;
+               h1_truth_cm_th = h_truth_cm_th;
+               h1_truth_cm_eta = h_truth_cm_eta;
+               h1_truth_cm_ph = h_truth_cm_ph;
+               h1_truth_cm_pt = h_truth_cm_pt;
+	     }
 	   } 
 	   else {
 	     h2_pid = h_pid;
@@ -549,6 +673,18 @@ void SidisTuples(){
 	     h2_z = z;
 	     h2 =had;
 	     found_second = 1;
+	     if(isMC){
+               h2_truth_pid = h_truth_pid;
+               h2_truth_p = h_truth_p;
+               h2_truth_th = h_truth_th;
+               h2_truth_ph = h_truth_ph;
+
+               h2_truth_cm_p = h_truth_cm_p;
+               h2_truth_cm_th = h_truth_cm_th;
+               h2_truth_cm_eta = h_truth_cm_eta;
+               h2_truth_cm_ph = h_truth_cm_ph;
+               h2_truth_cm_pt = h_truth_cm_pt;
+             }
 	   }
 	   if(found_leader && found_second){
 	     //cout << "masses "  << p1.M() << "  " << p2.M() <<endl;
@@ -567,6 +703,10 @@ void SidisTuples(){
 	     if(diff_phi_cm>PI)
 	       diff_phi_cm-=2*PI;
 	     diff_eta_cm = h2_cm_eta-h1_cm_eta;
+	     if(isMC){
+	       diff_phi_cm_truth = h2_truth_cm_ph-h1_truth_cm_ph;
+	       diff_eta_cm_truth = h2_truth_cm_eta-h1_truth_cm_eta;
+	     }
 	     dihadron_tree->Fill();
 	   } 
 	   
