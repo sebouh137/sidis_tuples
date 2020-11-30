@@ -101,12 +101,13 @@ void toCM(TLorentzVector cm, TLorentzVector p,TLorentzVector& result){
   //return result;
 }
 
-int charge(int pid){
-  if(pid == 11 || pid == -321 || pid == -211 || pid == -2212)
-    return -1;
-  else if (pid == -11 || pid == 321 || pid == 211 || pid == 2212)
-    return 1;
-  return 0;
+double angle(double phi){
+  double pi = TMath::Pi();
+  while(phi>pi)
+    phi-=2*pi;
+  while(phi<-pi)
+    phi+=2*pi;
+  return phi;
 }
 
 
@@ -203,12 +204,12 @@ void SidisTuples(){
    leafx(nelectrons);
    leafx(E);leafx(helicity);leafx(e_p);leafx(e_th);leafx(e_ph);leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W);
    leaf(h_chi2pid);leaf(h_pid);leaf(h_p);leaf(h_th);leaf(h_ph);leaf(h_DC1x);leaf(h_DC1y);leaf(h_DC2x);leaf(h_DC2y);leaf(h_DC3x);leaf(h_DC3y);leaf(dvz);leaf(z); leaf(h_cm_p);leaf(h_cm_th);leaf(h_cm_ph);leaf(h_cm_eta);leaf(h_cm_pt);
-   leaf(h_eta); leaf(dtime); leaf(dtime_corr);
+   leaf(h_eta); leaf(dtime); leaf(dtime_corr); 
 
-   double h_truth_pid, h_truth_p, h_truth_th, h_truth_ph, h_truth_cm_p, h_truth_cm_th, h_truth_cm_ph, h_truth_cm_eta, h_truth_cm_pt;
+   double h_truth_pid, h_truth_p, h_truth_th, h_truth_ph, h_truth_cm_p, h_truth_cm_th, h_truth_cm_ph, h_truth_cm_eta, h_truth_cm_pt, h_truth_z;
    if(isMC){
      leafx(e_truth_pid);leafx(e_truth_p);leafx(e_truth_th);leafx(e_truth_ph);
-     leafx(h_truth_pid);leafx(h_truth_p);leafx(h_truth_th);leafx(h_truth_ph);leafx(h_truth_cm_p);leafx(h_truth_cm_th);leafx(h_truth_cm_ph);leafx(h_truth_cm_eta);leafx(h_truth_cm_pt);
+     leafx(h_truth_pid);leafx(h_truth_p);leafx(h_truth_th);leafx(h_truth_ph);leafx(h_truth_cm_p);leafx(h_truth_cm_th);leafx(h_truth_cm_ph);leafx(h_truth_cm_eta);leafx(h_truth_cm_pt);leafx(h_truth_z);
    }
 
    TTree* dihadron_tree = new TTree("dihadrons","dihadrons");
@@ -228,14 +229,14 @@ void SidisTuples(){
    leaf(diff_eta_cm);
 
 
-   double h1_truth_pid, h1_truth_p, h1_truth_th, h1_truth_ph, h1_truth_cm_p, h1_truth_cm_th, h1_truth_cm_ph, h1_truth_cm_eta, h1_truth_cm_pt;
-   double h2_truth_pid, h2_truth_p, h2_truth_th, h2_truth_ph, h2_truth_cm_p, h2_truth_cm_th, h2_truth_cm_ph, h2_truth_cm_eta, h2_truth_cm_pt;
+   double h1_truth_pid, h1_truth_p, h1_truth_th, h1_truth_ph, h1_truth_cm_p, h1_truth_cm_th, h1_truth_cm_ph, h1_truth_cm_eta, h1_truth_cm_pt, h1_truth_z;
+   double h2_truth_pid, h2_truth_p, h2_truth_th, h2_truth_ph, h2_truth_cm_p, h2_truth_cm_th, h2_truth_cm_ph, h2_truth_cm_eta, h2_truth_cm_pt, h2_truth_z;
    double diff_phi_cm_truth, diff_eta_cm_truth;
    if(isMC){
-     leafx(e_truth_pid);leafx(e_truth_p);leafx(e_truth_th);leafx(e_truth_ph);
+     leafx(e_truth_pid);leafx(e_truth_p);leafx(e_truth_th);leafx(e_truth_ph);leafx(h1_truth_z);
      leafx(h1_truth_pid);leafx(h1_truth_p);leafx(h1_truth_th);leafx(h1_truth_ph);leafx(h1_truth_cm_p);
      leafx(h1_truth_cm_th);leafx(h1_truth_cm_ph);leafx(h1_truth_cm_eta);leafx(h1_truth_cm_pt);
-     leafx(h2_truth_pid);leafx(h2_truth_p);leafx(h2_truth_th);leafx(h2_truth_ph);leafx(h2_truth_cm_p);
+     leafx(h2_truth_pid);leafx(h2_truth_p);leafx(h2_truth_th);leafx(h2_truth_ph);leafx(h2_truth_cm_p);leafx(h2_truth_z);
      leafx(h2_truth_cm_th);leafx(h2_truth_cm_ph);leafx(h2_truth_cm_eta);leafx(h2_truth_cm_pt);
      leafx(diff_phi_cm_truth);leafx(diff_eta_cm_truth);
    }
@@ -496,19 +497,30 @@ void SidisTuples(){
 	 TLorentzVector e_truth;
 	 TLorentzVector cm_truth;
 	 if(isMC){
-	   double best_match_dvecp = 0.07;
+	   double best_match_diff = 99999;
 	   e_truth_p = 0;
 	   e_truth_th = 0;
 	   e_truth_ph = 0;
 	   int kbest = -1;
+	   TVector3 mc;
 	   for(int k = 0; k<mcparts->getRows();k++){
-	     double diff = sqrt(pow(el.X()-mcparts->getPx(k),2)
-				+pow(el.Y()-mcparts->getPy(k),2)
-				+pow(el.Z()-mcparts->getPz(k),2))/el.P();
-	     
+	     //if(mcparts->getPid(k) != 11)
+	     //continue;
+	     //cout << "e passed charge"<<endl;
+	     mc = {mcparts->getPx(k),mcparts->getPy(k),mcparts->getPz(k)};
+	     cout << mc.Theta() << "\t" << e_th << endl;
+	     if(abs(mc.Theta()-e_th)>1*TMath::Pi()/180){
+	       continue;
+	     }
+	     //cout << "e passed phi" <<endl;
+	     if(abs(mc.Theta()-e_th)>1*TMath::Pi()/180)
+	       continue;
+	     //cout << "e passed phi" <<endl;
+	     double diff = hypot(angle(mc.Phi()-e_ph)*sin(e_th),mc.Theta()-e_th);
 	     //closest match which has negative charge
-	     if(diff < best_match_dvecp && charge(mcparts->getPid(k)) == -1){
+	     if(diff < best_match_diff){
 	       kbest = k;
+	       best_match_diff = diff;
 	     }
 	   }
 	   if(kbest >= 0){
@@ -585,7 +597,7 @@ void SidisTuples(){
 	   
 	   TLorentzVector h_truth;
 	   if(isMC){
-	     double best_match_dvecp = 0.07;
+	     double best_match_diff = 9999;
 	     h_truth_p = 0;
 	     h_truth_th = 0;
 	     h_truth_ph = 0;
@@ -596,13 +608,26 @@ void SidisTuples(){
 	     h_truth_cm_pt = 0;
 	     int kbest = -1;
 	     for(int k = 0; k<mcparts->getRows();k++){
-	       double diff = sqrt(pow(had.X()-mcparts->getPx(k),2)
-				  +pow(had.Y()-mcparts->getPy(k),2)
-				  +pow(had.Z()-mcparts->getPz(k),2))/had.P();
-
-	       //closest match which has negative charge                                                                   
-	       if(diff < best_match_dvecp && db->GetParticle(h_pid)->Charge() == db->GetParticle(h->getPid())->Charge()){
+	       //cout << "hadron" <<endl;
+	       if(db->GetParticle(h_pid)->Charge() != db->GetParticle(mcparts->getPid(k))->Charge())
+	       continue;
+	       //cout << "passed charge" << endl;
+	       TVector3 mc(mcparts->getPx(k),mcparts->getPy(k),mcparts->getPz(k));
+	       if(abs(mc.Theta()-h_th)>1*TMath::Pi()/180){
+		 continue;
+	       }
+	       //cout << "passed theta" << endl;
+	       if(abs(angle(mc.Phi()-h_ph))>3*TMath::Pi()/180){
+		 continue;
+	       }
+	       //cout << "passed phi" <<endl;
+	       double diff = hypot(angle(mc.Phi()-h_ph)*sin(h_th),mc.Theta()-h_th);
+	       //closest match which has negative charge
+	       //cout << "diff " << diff << endl;
+	       if(diff < best_match_diff){
 		 kbest = k;
+		 best_match_diff = diff;
+
 	       }
 	     }
 	     if(kbest >= 0){
@@ -614,7 +639,8 @@ void SidisTuples(){
 	       h_truth_p = h_truth.P();
 	       h_truth_th = h_truth.Theta();
 	       h_truth_ph = h_truth.Phi();
-	       
+	       h_truth_z = h_truth_p/(E-e_truth_p);
+
 	       h_truth_cm_p = h_truth_cm.P();
 	       h_truth_cm_th = h_truth_cm.Theta();
 	       h_truth_cm_eta = h_truth_cm.PseudoRapidity();
@@ -649,6 +675,7 @@ void SidisTuples(){
                h1_truth_p = h_truth_p;
                h1_truth_th = h_truth_th;
                h1_truth_ph = h_truth_ph;
+	       h1_truth_z = h_truth_z;
 
 	       h1_truth_cm_p = h_truth_cm_p;
                h1_truth_cm_th = h_truth_cm_th;
@@ -664,6 +691,7 @@ void SidisTuples(){
 	     h2_eta = h_eta;
 	     h2_ph = h_ph;
 	     h2_chi2pid = h_chi2pid;
+	     h2_truth_z = h_truth_z;
 
 	     h2_cm_p = h_cm_p;
 	     h2_cm_th =h_cm_th;
