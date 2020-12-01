@@ -1,0 +1,14 @@
+#to create sidis tuples (example):
+
+clas12root -l -b -q ~/sidis_tuples/src/SidisTuples.C+ --in=/work/clas12/rg-a/montecarlo/fall2018/torus-1/clasdis/nobg/DIS_pass1_997_1002.hipo --out=/work/clas12/spaul/example_mc.root --isMC --N=300000 
+
+# To automate the creation of tuples (multiple files) on auger
+cd auger
+python fill_request_data.py inputfile1.hipo [inputfile2.hipo ... inputfileN.hipo]
+# or 
+python fill_request_data.py /path/to/inputfile/directory/*.hipo
+
+# this will produce tmp.xml, which is a copy of the file make_tuples_template.xml with the input files list given.  Next, edit tmp.xml to change the output file location and then execute the following command to submit the job request:
+jsub -x tmp.xml
+
+
