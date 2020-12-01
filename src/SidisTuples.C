@@ -20,6 +20,7 @@
 #include "helonline.h"
 using namespace clas12;
 
+double defval = 0;
 
 void SetLorentzVector(TLorentzVector &p4, clas12::region_part_ptr rp, double mass){
   p4.SetXYZM(rp->par()->getPx(),rp->par()->getPy(),
@@ -80,7 +81,7 @@ double cut_evzmax = 1;//12;
 //double cut_Wmin  = 2;
 double cut_Q2min = 1;
 double cut_Wmin = 2;
-//double cut_ymax  = 0.8;
+double cut_ymax  = 0.85;
 
 double cut_dvzmin = -5;//-20;
 double cut_dvzmax = 5;//20;
@@ -191,9 +192,9 @@ void SidisTuples(){
    leaf(z_tot);
 
    //e_truth_pid, just in case a non-electron is misidentified as an electron
-   double e_truth_pid, e_truth_p, e_truth_th, e_truth_ph;
+   double e_truth_pid, e_truth_p, e_truth_th, e_truth_ph, e_truth_vx, e_truth_vy, e_truth_vz;
    if(isMC){
-     leafx(e_truth_pid);leafx(e_truth_p);leafx(e_truth_th);leafx(e_truth_ph);
+     leafx(e_truth_pid);leafx(e_truth_p);leafx(e_truth_th);leafx(e_truth_ph);leafx(e_truth_vx);leafx(e_truth_vy); leafx(e_truth_vz);
    }
 
    //cout << "made leaves" <<endl;
@@ -390,7 +391,7 @@ void SidisTuples(){
        auto electrons=c12.getByID(11);
        //cout << "electrons" <<endl;
        //cout << electrons.size()<< "electrons" << endl;
-       //if(electrons.size() > 1)
+      //if(electrons.size() > 1)
        //continue;
 
        //auto gammas=c12.getByID(22);
@@ -414,6 +415,7 @@ void SidisTuples(){
 	 }*/
        nelectrons = electrons.size();
        int electrons_passCuts = 0;
+       vector<int> matchedMCindices = {};
        for(int i=0; i<electrons.size(); i++){
 	 //if(electrons.size()>1) continue;
 	 e_DC1x=electrons[i]->traj(DC,DC1)->getX();
@@ -474,7 +476,7 @@ void SidisTuples(){
 	 nu = (beam.E()-el.E());
 	 y = nu/E;
 	 
-	 if(useCuts && (Q2<cut_Q2min || W<cut_Wmin))
+	 if(useCuts && (Q2<cut_Q2min || W<cut_Wmin || y > cut_ymax))
            continue;
 	 
 	 //if(useCuts && y>cut_ymax)
@@ -508,7 +510,7 @@ void SidisTuples(){
 	     //continue;
 	     //cout << "e passed charge"<<endl;
 	     mc = {mcparts->getPx(k),mcparts->getPy(k),mcparts->getPz(k)};
-	     cout << mc.Theta() << "\t" << e_th << endl;
+	     //cout << mc.Theta() << "\t" << e_th << endl;
 	     if(abs(mc.Theta()-e_th)>1*TMath::Pi()/180){
 	       continue;
 	     }
@@ -524,6 +526,7 @@ void SidisTuples(){
 	     }
 	   }
 	   if(kbest >= 0){
+	     matchedMCindices.push_back(kbest);
 	     // the electron mass is a myth.  
 	     // I could set it to zero and nothing would change in the analysis
 	     e_truth.SetXYZM(mcparts->getPx(kbest),mcparts->getPy(kbest),mcparts->getPz(kbest),0.000511);
@@ -532,6 +535,9 @@ void SidisTuples(){
 	     e_truth_th = e_truth.Theta();
 	     e_truth_ph = e_truth.Phi();
 	     cm_truth = beam+target-e_truth;
+	     e_truth_vx = mcparts->getVx(kbest);
+	     e_truth_vy = mcparts->getVy(kbest);
+	     e_truth_vz = mcparts->getVz(kbest);
 	   }
 	 }
 	 
@@ -631,6 +637,7 @@ void SidisTuples(){
 	       }
 	     }
 	     if(kbest >= 0){
+	       matchedMCindices.push_back(kbest);
 	       TLorentzVector h_truth_cm;
 	       
 	       h_truth.SetXYZM(mcparts->getPx(kbest),mcparts->getPy(kbest),mcparts->getPz(kbest),db->GetParticle(mcparts->getPid(kbest))->Mass());
@@ -757,9 +764,37 @@ void SidisTuples(){
 	 electron_tree->Fill();
 	 electrons_passCuts++;
        }
-       //cout << electrons_passCuts << " electrons pass cuts" << endl;
-       //cout << "end of file"<< endl;
 
+       TLorentzVector mc;
+       if(isMC){
+	 for(int k = 0; k<mcparts->getRows();k++){
+	   bool alreadymatched=0;
+	   for(int j : matchedMCindices){
+	     if(k == j)
+	       alreadymatched=1;
+	     //cout << "skipping matched mc particle" << endl;
+	   }
+	   if(alreadymatched)
+	   continue;
+	   mc.SetXYZM(mcparts->getPx(k),mcparts->getPy(k),mcparts->getPz(k),db->GetParticle(mcparts->getPid(k))->Mass());
+	   int pid = mcparts->getPid(k);
+	   
+	   if(pid == 11 && -(mc-beam)*(mc-beam)> cut_Q2min && (target+beam-mc).M()> cut_Wmin && (E-mc.E())/E < cut_ymax){
+	     e_p = e_th = e_ph = Q2 = nu = x = y = W = e_DC1x = e_DC2x = e_DC3x = e_DC1y = e_DC2y = e_DC3y = e_PCALx = e_PCALy = e_ecalfrac = e_pcal = e_vz = 0; 
+	     e_truth_p = mc.P();
+	     e_truth_th = mc.Theta();
+	     e_truth_ph = mc.Phi();
+	     e_truth_pid = 11;
+	     
+	     e_truth_vx = mcparts->getVx(k);
+	     e_truth_vy = mcparts->getVy(k);
+	     e_truth_vz = mcparts->getVz(k);
+
+	     electron_tree->Fill();
+	   }
+	 }
+	 
+       }
        
      } 
       
