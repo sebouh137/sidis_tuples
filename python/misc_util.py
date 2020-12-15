@@ -39,7 +39,7 @@ class BinIterator:
             if self._mode == 'len':
                 ret = [len(r) for r in ret]
         self._i+=1
-        return self._min+(self._i+1/2)*dx, ret
+        return self._min+(self._i-1/2)*dx, ret
 
 
 def query_or_all(df,q):
