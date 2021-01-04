@@ -28,7 +28,7 @@ void SetLorentzVector(TLorentzVector &p4, clas12::region_part_ptr rp, double mas
 
 }
 
-bool fillHistsDC(clas12::region_part_ptr p, TH2* dc1, TH2* dc2, TH2* dc3){
+/*bool fillHistsDC(clas12::region_part_ptr p, TH2* dc1, TH2* dc2, TH2* dc3){
   if (p->traj(DC,DC1)->getX() != 0)
     dc1->Fill(p->traj(DC,DC1)->getX(),p->traj(DC,DC1)->getY());
   else return 0;
@@ -37,7 +37,7 @@ bool fillHistsDC(clas12::region_part_ptr p, TH2* dc1, TH2* dc2, TH2* dc3){
   if (p->traj(DC,DC3)->getX() != 0)
     dc3->Fill(p->traj(DC,DC3)->getX(),p->traj(DC,DC3)->getY());
   return 1;
-}
+  }*/
 
 
 double s30 = sin(TMath::Pi()/6);
@@ -121,14 +121,17 @@ void SidisTuples(){
   //ignore this just getting file name!
 
    TString outputFile;
-
    TChain input("hipo");
-
+   int skipEvents=0;
    int maxevents=-1;
    bool useCuts = 1;
    bool isMC = 0;
-   for(Int_t i=1;i<gApplication->Argc();i++){
-    TString opt=gApplication->Argv(i);
+   bool createDipionTree = 0;
+   bool createElectronTree = 0;
+   bool createDihadronTree = 0;
+   bool createHadronTree = 0;
+   for(Int_t ii=1;ii<gApplication->Argc();ii++){
+    TString opt=gApplication->Argv(ii);
     if((opt.Contains("--in="))){
       TString inputFile=opt(5,opt.Sizeof());
       cout << inputFile << endl;
@@ -153,11 +156,34 @@ void SidisTuples(){
       cout << (TString)opt(4,opt.Sizeof())<< endl;
       maxevents= ((TString)opt(4,opt.Sizeof())).Atoi();
       cout << "maxevents set to " << maxevents << endl;
+    } else if(opt.Contains("--skipEvents=")){
+      skipEvents = ((TString)opt(13,opt.Sizeof())).Atoi();
+      cout << "skipping the first " << skipEvents << " events" << endl;
     } else if (opt.Contains("--cut")){
       useCuts=1; 
     } else if (opt.EqualTo("--isMC")){
       isMC=1;
+    } else if (opt.Contains("--includeDipions")){
+      createDipionTree = 1;
+      cout << "create dipion tree" <<endl;
+    } else if (opt.Contains("--includeDihadrons")){
+	createDihadronTree = 1;
+	cout << "create dihadron tree" <<endl;
+    } else if (opt.Contains("--includeHadrons")){
+      createHadronTree = 1;
+      cout << "create hadron tree" <<endl;
+    } else if (opt.Contains("--includeElectrons")){
+      createElectronTree = 1;
+      cout << "create electron tree" <<endl;
+    } else if (opt.Contains("--skipEvents=")){
+
     }
+
+   }
+
+   if(!(createDihadronTree||createHadronTree||createDipionTree||createElectronTree)){
+     cout << "no trees selected!  Aborting" << endl;
+     exit(0);
    }
 
    clas12::clas12databases *dbc12;
@@ -165,15 +191,14 @@ void SidisTuples(){
      clas12::clas12databases::SetRCDBRemoteConnection();
      dbc12 = new clas12::clas12databases();
    }
-   //TString paramList = "E:helicity:e_p:e_th:e_ph:nu:Q2:x:y:W:e_DC1x:e_DC1y:e_DC2x:e_DC2y:e_DC3x:e_DC3y:e_PCALx:e_PCALy:e_vz:e_ecalfrac:e_pcal:npip:npim";
-   
-   //cout << paramList << endl;
-   TTree* electron_tree = new TTree("electrons","electrons");//,paramList);
-   //double E,ep,eth,eph,nu,Q2,x,y,W,eDC1x,eDC1y,eDC2x,eDC2y,eDC3x,eDC3y,ePCALx,ePCALy,evz;
-#define leaf(name)  double name=0; tree->Branch(#name,&name,#name+(TString)"/D");
+   //macro for declaring a variable and adding it to the current tree
+#define leaf(name)  double name=0; if(tree != NULL) tree->Branch(#name,&name,#name+(TString)"/D");
    //use this one if the variable has already been declared
-#define leafx(name) tree->Branch(#name,&name,#name+(TString)"/D");
-   TTree* tree = electron_tree;
+#define leafx(name) if(tree != NULL) tree->Branch(#name,&name,#name+(TString)"/D");
+   TTree* tree = NULL;
+
+   TTree* electron_tree= createElectronTree ? new TTree("electrons","electrons") : NULL;//,paramList);
+   tree = electron_tree;
    leaf(E);
    leaf(helicity);
    leaf(e_p);
@@ -191,35 +216,36 @@ void SidisTuples(){
    leaf(nh);
    leaf(z_tot);
 
-   //e_truth_pid, just in case a non-electron is misidentified as an electron
-   double e_truth_pid, e_truth_p, e_truth_th, e_truth_ph, e_truth_vx, e_truth_vy, e_truth_vz;
-   if(isMC){
-     leafx(e_truth_pid);leafx(e_truth_p);leafx(e_truth_th);leafx(e_truth_ph);leafx(e_truth_vx);leafx(e_truth_vy); leafx(e_truth_vz);
-   }
+   
+   // don't add these variables to the tree unless running MC 
+   if(!isMC)
+     tree = NULL;
+   leaf(e_truth_pid);leaf(e_truth_p);leaf(e_truth_th);leaf(e_truth_ph);leaf(e_truth_vx);leaf(e_truth_vy); leaf(e_truth_vz);
+   
 
    //cout << "made leaves" <<endl;
    
    
-   TTree* hadron_tree = new TTree("hadrons","hadrons");
+   TTree* hadron_tree = createHadronTree ? new TTree("hadrons","hadrons") : NULL;
    tree = hadron_tree;
    leafx(nelectrons);
    leafx(E);leafx(helicity);leafx(e_p);leafx(e_th);leafx(e_ph);leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W);
    leaf(h_chi2pid);leaf(h_pid);leaf(h_p);leaf(h_th);leaf(h_ph);leaf(h_DC1x);leaf(h_DC1y);leaf(h_DC2x);leaf(h_DC2y);leaf(h_DC3x);leaf(h_DC3y);leaf(dvz);leaf(z); leaf(h_cm_p);leaf(h_cm_th);leaf(h_cm_ph);leaf(h_cm_eta);leaf(h_cm_pt);
    leaf(h_eta); leaf(dtime); leaf(dtime_corr); 
 
-   double h_truth_pid, h_truth_p, h_truth_th, h_truth_ph, h_truth_cm_p, h_truth_cm_th, h_truth_cm_ph, h_truth_cm_eta, h_truth_cm_pt, h_truth_z;
-   if(isMC){
-     leafx(e_truth_pid);leafx(e_truth_p);leafx(e_truth_th);leafx(e_truth_ph);
-     leafx(h_truth_pid);leafx(h_truth_p);leafx(h_truth_th);leafx(h_truth_ph);leafx(h_truth_cm_p);leafx(h_truth_cm_th);leafx(h_truth_cm_ph);leafx(h_truth_cm_eta);leafx(h_truth_cm_pt);leafx(h_truth_z);
-   }
+   
+   if(!isMC) tree = NULL;
+   leafx(e_truth_pid);leafx(e_truth_p);leafx(e_truth_th);leafx(e_truth_ph);
+   leaf(h_truth_pid);leaf(h_truth_p);leaf(h_truth_th);leaf(h_truth_ph);leaf(h_truth_cm_p);leaf(h_truth_cm_th);leaf(h_truth_cm_ph);leaf(h_truth_cm_eta);leaf(h_truth_cm_pt);leaf(h_truth_z);
+   
 
-   TTree* dihadron_tree = new TTree("dihadrons","dihadrons");
+   TTree* dihadron_tree = createDihadronTree ? new TTree("dihadrons","dihadrons") : NULL;
    tree = dihadron_tree;   
    leafx(E);leafx(helicity);leafx(e_p);leafx(e_th);leafx(e_ph);leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W); 
    
 
    // macro creates fields for two hadrons
-#define leaf2(name) double h1_##name=0; tree->Branch((TString)"h1_"+#name,&h1_##name,(TString)"h1_"+#name+(TString)"/D"); double h2_##name=0; tree->Branch((TString)"h2_"+#name,&h2_##name,(TString)"h2_"+#name+(TString)"/D");
+#define leaf2(name) double h1_##name=0; double h2_##name=0; if(tree != NULL) {tree->Branch((TString)"h1_"+#name,&h1_##name,(TString)"h1_"+#name+(TString)"/D"); tree->Branch((TString)"h2_"+#name,&h2_##name,(TString)"h2_"+#name+(TString)"/D");}
    leaf2(chi2pid);leaf2(pid);leaf2(p);leaf2(th);leaf2(ph);leaf2(z);leaf2(eta);
    leaf2(cm_p);leaf2(cm_th);leaf2(cm_ph);leaf2(cm_eta);leaf2(cm_pt);
    leaf(pair_mass);
@@ -230,17 +256,34 @@ void SidisTuples(){
    leaf(diff_eta_cm);
 
 
-   double h1_truth_pid, h1_truth_p, h1_truth_th, h1_truth_ph, h1_truth_cm_p, h1_truth_cm_th, h1_truth_cm_ph, h1_truth_cm_eta, h1_truth_cm_pt, h1_truth_z;
-   double h2_truth_pid, h2_truth_p, h2_truth_th, h2_truth_ph, h2_truth_cm_p, h2_truth_cm_th, h2_truth_cm_ph, h2_truth_cm_eta, h2_truth_cm_pt, h2_truth_z;
-   double diff_phi_cm_truth, diff_eta_cm_truth;
-   if(isMC){
-     leafx(e_truth_pid);leafx(e_truth_p);leafx(e_truth_th);leafx(e_truth_ph);leafx(h1_truth_z);
-     leafx(h1_truth_pid);leafx(h1_truth_p);leafx(h1_truth_th);leafx(h1_truth_ph);leafx(h1_truth_cm_p);
-     leafx(h1_truth_cm_th);leafx(h1_truth_cm_ph);leafx(h1_truth_cm_eta);leafx(h1_truth_cm_pt);
-     leafx(h2_truth_pid);leafx(h2_truth_p);leafx(h2_truth_th);leafx(h2_truth_ph);leafx(h2_truth_cm_p);leafx(h2_truth_z);
-     leafx(h2_truth_cm_th);leafx(h2_truth_cm_ph);leafx(h2_truth_cm_eta);leafx(h2_truth_cm_pt);
-     leafx(diff_phi_cm_truth);leafx(diff_eta_cm_truth);
-   }
+   
+   if(!isMC) tree = NULL;
+   leafx(e_truth_pid);leafx(e_truth_p);leafx(e_truth_th);leafx(e_truth_ph);
+   leaf(h1_truth_z);
+   leaf(h1_truth_pid);leaf(h1_truth_p);leaf(h1_truth_th);leaf(h1_truth_ph);leaf(h1_truth_cm_p);
+   leaf(h1_truth_cm_th);leaf(h1_truth_cm_ph);leaf(h1_truth_cm_eta);leaf(h1_truth_cm_pt);
+   leaf(h2_truth_pid);leaf(h2_truth_p);leaf(h2_truth_th);leaf(h2_truth_ph);leaf(h2_truth_cm_p);leaf(h2_truth_z);
+   leaf(h2_truth_cm_th);leaf(h2_truth_cm_ph);leaf(h2_truth_cm_eta);leaf(h2_truth_cm_pt);
+   leaf(diff_phi_cm_truth);leaf(diff_eta_cm_truth);
+   
+
+   // A small tree for storing dipion events, without requiring one of them to be leading
+   //
+     
+   TTree* dipion_tree = createDipionTree ? new TTree("dipions","dipions") : NULL;
+   tree = dipion_tree;
+   leafx(nelectrons);
+   leafx(E);leafx(helicity);leafx(e_p);leafx(e_th);leafx(e_ph);leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W);
+   
+   leaf(pi1_cm_eta);leaf(pi2_cm_eta);leaf(pi1_cm_pt);leaf(pi2_cm_pt);leaf(pi1_z);leaf(pi2_z);leaf(pi1_pid);leaf(pi2_pid);leaf(pi1_cm_ph);leaf(pi2_cm_ph);
+
+   leafx(diff_phi_cm);leafx(diff_eta_cm);leafx(pair_mass);
+   
+   if(!isMC) tree = NULL;
+   leaf(duplicate_pions);
+   
+   
+
    /*if(inputFile==TString())  {
      std::cout << " *** please provide a file name..." << std::endl;
      exit(0);
@@ -287,6 +330,7 @@ void SidisTuples(){
        E = current.beam_energy/1000;
        TString targetName(rcdb->current().target);
        cout << "target is " << targetName << "." << endl;
+       std::cout << "beam energy is " << E << std::endl;
        rcdb->close();
      } else{
        E=0; //get the beam energy later
@@ -294,7 +338,7 @@ void SidisTuples(){
      
      
      TLorentzVector beam(0,0,E,E);  
-     std::cout << "beam energy is " << E << std::endl;
+
      //  clas12reader c12(files->At(i)->GetTitle(),{0});//add tags {tag1,tag2,tag3,...}
       
       //Add some event Pid based selections
@@ -312,6 +356,14 @@ void SidisTuples(){
      //c12.getRunBeamCharge();
 
      //int max = 100000;
+
+
+     // for data, this step can be done.
+     // with MC, there are events with 
+     // electrons that fail recon,
+     // so these must not be excluded
+     if(!isMC)
+       c12.addAtLeastPid(11,1);
      while(c12.next()==true){
        if(isMC && E==0){
 	 auto dict = c12.getDictionary();
@@ -331,12 +383,17 @@ void SidisTuples(){
        }
        //cout << "new event" << endl;
        //       c12.addARegionCDet();
-       if(!(count %10000))
-	 cout << count <<"events processed; " << maxevents << "requested"<< endl;
-       count ++;
+       if(!((count-skipEvents) %10000) && count >= skipEvents)
+	 cout << (count-skipEvents) <<"events processed; " << maxevents << "requested"<< endl;
+       //count ++;
 
-       if(count > maxevents && maxevents >0)
+       if(count-skipEvents > maxevents && maxevents >0)
 	 break;
+       if(count < skipEvents){
+	 count ++;
+	 continue;
+       }
+       count ++;
 	//can get an estimate of the beam current to this event
 	//c12.getCurrApproxCharge();//if called c12.scalerReader();
 	
@@ -416,7 +473,9 @@ void SidisTuples(){
        nelectrons = electrons.size();
        int electrons_passCuts = 0;
        vector<int> matchedMCindices = {};
-       for(int i=0; i<electrons.size(); i++){
+       //cout <<"CHECK 0: " << nelectrons << " electrons" << endl;
+       for(int i=0; i<nelectrons; i++){
+	 //cout << "CHECK 0.5" << endl;
 	 //if(electrons.size()>1) continue;
 	 e_DC1x=electrons[i]->traj(DC,DC1)->getX();
 	 e_DC1y=electrons[i]->traj(DC,DC1)->getY();
@@ -432,6 +491,7 @@ void SidisTuples(){
 	 //cout << "electron" << endl;
 
 	 //the electron mass is a myth.  I could set this to zero and nothing would change.
+	 //cout << "CHECK 1" <<endl;
 	 SetLorentzVector(el,electrons[i], 0.000511); 
 	 e_p = el.P();
 	 //cout<< "e_p: " << e_p <<" "<< el.P() << endl;
@@ -442,7 +502,7 @@ void SidisTuples(){
 	 //if(p<0.01*E)
 	 //continue;
 	 
-	 
+	 //cout << "CHECK 2"<<endl;
 	 double ecal = electrons[i]->getDetEnergy();
 	 
 	 e_ecalfrac = ecal/e_p;
@@ -468,7 +528,7 @@ void SidisTuples(){
 	 //done with electron id cuts
 
 
-	 
+	 //cout << "now for electron kinematics cuts"<<endl;
 	 // now for electron kinematics cuts
 	 Q2 = -(beam-el)*(beam-el);
 	 W = (target+beam-el).M();
@@ -498,6 +558,7 @@ void SidisTuples(){
 	 z_tot = 0;
 	 TLorentzVector e_truth;
 	 TLorentzVector cm_truth;
+	 //cout << "filling electron MC" << endl;
 	 if(isMC){
 	   double best_match_diff = 99999;
 	   e_truth_p = 0;
@@ -653,10 +714,10 @@ void SidisTuples(){
 	       h_truth_cm_eta = h_truth_cm.PseudoRapidity();
 	       h_truth_cm_ph = h_truth_cm.Phi();
 	       h_truth_cm_pt = h_truth_cm.Pt();
-	     }
+	     } 
 	   }
-	   
-	   hadron_tree->Fill();
+	   if(hadron_tree != NULL)
+	     hadron_tree->Fill();
 	   
 	   
 	   
@@ -742,7 +803,8 @@ void SidisTuples(){
 	       diff_phi_cm_truth = h2_truth_cm_ph-h1_truth_cm_ph;
 	       diff_eta_cm_truth = h2_truth_cm_eta-h1_truth_cm_eta;
 	     }
-	     dihadron_tree->Fill();
+	     if(dihadron_tree != NULL)
+	       dihadron_tree->Fill();
 	   } 
 	   
 	   if(h_pid == 211)
@@ -760,9 +822,94 @@ void SidisTuples(){
 	   nh++;
 	   z_tot+=z;
 	 }
-	 //cout<< "e_p: " <<e_p<<endl;
-	 electron_tree->Fill();
+	 if(electron_tree != NULL)
+	   electron_tree->Fill();
 	 electrons_passCuts++;
+
+	 //dipion tree
+	 if(abs(h_pid) == 211 && createDipionTree){
+	   for(int k = 0; k<parts.size();k++){
+	     
+	     auto h2 = parts[k];
+	     int pid = h2->getPid();
+	     TLorentzVector had2;
+	     TLorentzVector had2_cm;
+	     SetLorentzVector(had2,h2, db->GetParticle(211)->Mass());
+	     if(abs(pid) == 211 && had2.E()/nu < z){
+	       pi1_z = z;
+	       toCM(cm, had2,had2_cm);
+	       pi1_cm_pt = h_cm_pt;
+	       pi1_cm_ph = h_cm_ph;
+	       pi1_cm_eta = h_cm_eta;
+	       pi1_pid = h_pid;
+	       
+	       pi2_z = had2.E()/nu;
+	       pi2_cm_pt = had2_cm.Pt();
+	       pi2_cm_ph = had2_cm.Phi();
+	       pi2_cm_eta = had2_cm.Eta();
+	       pi2_pid = pid;
+	       diff_phi_cm = angle(pi1_cm_ph-pi2_cm_ph);
+	       diff_eta_cm = pi1_cm_eta-pi2_cm_eta;
+	       pair_mass = (had2+had)*(had2+had);
+	       if(isMC){
+		 double p1_p = had.P();
+		 double pi2_th = had2.Theta();
+		 double pi2_ph = had2.Phi();
+		 double best_match_diff = 9999;
+		 int kbest1 = -1;
+		 int kbest2 = -1;
+		 for(int k = 0; k<mcparts->getRows();k++){
+		     //cout << "hadron" <<endl;
+		   TVector3 mc(mcparts->getPx(k),mcparts->getPy(k),mcparts->getPz(k));
+		   if(abs(mc.Theta()-pi2_th)>1*TMath::Pi()/180){
+		     continue;
+		   }
+		   if(abs(angle(mc.Phi()-pi2_ph))>3*TMath::Pi()/180){
+		     continue;
+		   }
+		   //cout << "passed phi" <<endl;                                   
+		   double diff = hypot(angle(mc.Phi()-pi2_ph)*sin(pi2_th),mc.Theta()-pi2_th);
+		   //closest match which has negative charge                        
+		   //cout << "diff " << diff << endl;                               
+		   if(diff < best_match_diff){
+		     kbest1 = k;
+		     best_match_diff = diff;
+		   }
+		 }
+		 best_match_diff = 9999;
+		 for(int k = 0; k<mcparts->getRows();k++){
+		   //cout << "hadron" <<endl;                                                                  
+                   TVector3 mc(mcparts->getPx(k),mcparts->getPy(k),mcparts->getPz(k));
+                   if(abs(mc.Theta()-h_th)>1*TMath::Pi()/180){
+                     continue;
+                   }
+                   if(abs(angle(mc.Phi()-h_ph))>3*TMath::Pi()/180){
+                     continue;
+                   }
+                   //cout << "passed phi" <<endl;                                                                
+                   double diff = hypot(angle(mc.Phi()-pi2_ph)*sin(pi2_th),mc.Theta()-pi2_th);
+                   //closest match which has negative charge                                                     
+                   //cout << "diff " << diff << endl;                                                            
+                   if(diff < best_match_diff){
+                     kbest2 = k;
+                     best_match_diff = diff;
+                   }
+                 }
+		 if(kbest1 == kbest2 && kbest2 != -1){
+		   duplicate_pions=1;
+		 } else {
+		   duplicate_pions=0;
+		 }
+		 
+	       }
+	       if(dipion_tree != NULL)
+		 dipion_tree->Fill();
+	       
+	     }
+	   }
+	 }
+
+
        }
 
        TLorentzVector mc;
@@ -775,12 +922,26 @@ void SidisTuples(){
 	     //cout << "skipping matched mc particle" << endl;
 	   }
 	   if(alreadymatched)
-	   continue;
-	   mc.SetXYZM(mcparts->getPx(k),mcparts->getPy(k),mcparts->getPz(k),db->GetParticle(mcparts->getPid(k))->Mass());
+	     continue;
 	   int pid = mcparts->getPid(k);
+	   mc.SetXYZM(mcparts->getPx(k),mcparts->getPy(k),mcparts->getPz(k),db->GetParticle(pid)->Mass());
+	   if(abs(pid) == 211 || abs(pid) == 321 || abs(pid) == 2212){
+
+	     // only store unmatched generated hadrons in events where
+	     // the electron is reconstructed
+	     if(e_p == defval)
+	       continue;
+	     h_chi2pid = h_pid = h_p = h_th = h_ph = z = h_DC1x = h_DC2x = h_DC3x = h_DC1y = h_DC2y = h_DC3y = dvz = h_cm_th = h_cm_ph = h_cm_eta = h_cm_pt = h_cm_p = defval; 
+	     h_truth_p = mc.P();
+	     h_truth_th = mc.Theta();
+	     h_truth_ph = mc.Phi();
+	     h_truth_pid = pid;
+	     if(hadron_tree != NULL)
+	       hadron_tree->Fill();
+	   }
 	   
 	   if(pid == 11 && -(mc-beam)*(mc-beam)> cut_Q2min && (target+beam-mc).M()> cut_Wmin && (E-mc.E())/E < cut_ymax){
-	     e_p = e_th = e_ph = Q2 = nu = x = y = W = e_DC1x = e_DC2x = e_DC3x = e_DC1y = e_DC2y = e_DC3y = e_PCALx = e_PCALy = e_ecalfrac = e_pcal = e_vz = 0; 
+	     e_p = e_th = e_ph = Q2 = nu = x = y = W = e_DC1x = e_DC2x = e_DC3x = e_DC1y = e_DC2y = e_DC3y = e_PCALx = e_PCALy = e_ecalfrac = e_pcal = e_vz = defval; 
 	     e_truth_p = mc.P();
 	     e_truth_th = mc.Theta();
 	     e_truth_ph = mc.Phi();
@@ -789,8 +950,8 @@ void SidisTuples(){
 	     e_truth_vx = mcparts->getVx(k);
 	     e_truth_vy = mcparts->getVy(k);
 	     e_truth_vz = mcparts->getVz(k);
-
-	     electron_tree->Fill();
+	     if(electron_tree != NULL)
+	       electron_tree->Fill();
 	   }
 	 }
 	 
@@ -804,9 +965,15 @@ void SidisTuples(){
    //hm2gCut->SetLineColor(2);
    //hm2gCut->DrawCopy("same");
    TFile *f = new TFile(outputFile,"RECREATE");
-   electron_tree->Write();
-   hadron_tree->Write();
-   dihadron_tree->Write();
+   
+   if(electron_tree != NULL)
+     electron_tree->Write();
+   if(hadron_tree != NULL)
+     hadron_tree->Write();
+   if(dihadron_tree != NULL)
+     dihadron_tree->Write();
+   if(dipion_tree != NULL)
+     dipion_tree->Write();
    f->Close();
    
    
