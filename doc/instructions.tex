@@ -1,0 +1,106 @@
+\documentclass[english]{article}
+%\documentclass[english,10pt,final,twocolumn]{article}
+
+%\setlength{\mathindent}{0pt}
+\usepackage[T1]{fontenc}
+\usepackage[latin9]{inputenc}
+\usepackage{pdfpages}
+\usepackage{amstext}
+\usepackage{graphicx}
+\usepackage{gensymb}
+\usepackage{amssymb}
+\usepackage{placeins}
+\usepackage{subfigure}
+\usepackage[title]{appendix}
+\makeatletter
+\usepackage{float}
+\newcommand{\GeVsq}[0]{$({\rm GeV}\!/\!c)^2$}
+%\usepackage{subcaption}
+\usepackage{blindtext}
+\usepackage{titlesec}
+
+%\titleformat{\subsection}
+%  {\normalfont\scshape}{\thesubsection}{1em}{}
+\titleformat{\section}
+  {\bfseries\large}{\thesection}{1em}{}
+\titleformat{\subsection}
+  {\bfseries}{\thesubsection}{1em}{}
+  \titleformat{\appendix}
+  {\bfseries\large}{\thesection}{1em}{}
+
+
+%%TeXShop comment:
+% !TEX pdfSinglePage
+
+\newcommand{\lyxmathsym}[1]{\ifmmode\begingroup\def\b@ld{bold}
+  \text{\ifx\math@version\b@ld\bfseries\fi#1}\endgroup\else#1\fi}
+\usepackage{braket}
+%\usepackage{mathtools}
+\usepackage{mathrsfs}
+\usepackage{slashed}
+\usepackage{bm}
+\usepackage{datetime}
+\usepackage{siunitx}
+
+%in order to use align
+\usepackage{amsmath}
+
+\DeclareSIUnit[number-unit-product = {}]\clight{c}
+\DeclareSIUnit\eVperc{\eV\per\clight}
+\DeclareSIUnit\GeVpercs{\giga\eV\squared\per\clight\squared}
+\DeclareSIUnit\MeVpercs{\mega\eV\per\clight\squared}
+\sisetup{per-mode = symbol}
+%\journal{Physics Letters B}
+%\biboptions{numbers,sort&compress}
+\usepackage[left=1.6cm,right=1.04cm,top=1.65cm,bottom=1.65cm,columnsep=25pt]{geometry}
+\usepackage{lineno}
+%\linenumbers
+\usepackage{hyperref}  % hyper-links 
+\hypersetup{breaklinks = true, colorlinks = true, allcolors = magenta}
+\hyphenation{ALPGEN}
+\hyphenation{EVTGEN}
+\hyphenation{PYTHIA}
+
+\usepackage{setspace}
+\usepackage{graphicx}
+\usepackage{wrapfig}
+
+%\newcommand{\code}[1]{\begin{verbatim}#1\end{verbatim}}
+\newcommand{\code}[1]{\texttt{#1}}
+\makeatother
+
+\usepackage{babel}
+\begin{document}
+
+
+\title{
+Analysis Documentation for Clas12 Sidis Tuple Maker
+}
+
+\author{Sebouh Paul}
+\date{\today}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\section{How to make tuples}
+Example:
+
+
+\begin{verbatim}clas12root -l -b -q src/SidisTuples.C+ 
+--in=/work/clas12/rg-a/montecarlo/fall2018/torus-1/clasdis/nobg/DIS_pass1_997_1002.hipo 
+ --out=mc_electrons.root --isMC --skipEvents=600000 --N=300000 --includeElectrons\end{verbatim}
+
+This creates opens the file \code{/work/clas12/rg-a/montecarlo/fall2018/torus-1/clasdis/nobg/DIS\_pass1\_997\_1002.hipo}, and outputs a file \code{mc\_electrons.root}.  The \code{--isMC} flag tells the program that the input file is from a Monte-Carlo simulation.  The optional \code{--skipEvents} and \code{--N} arguments tells the program to skip the first 600k events, and then processes the next 300k events.  The output contains only the electrons tuple, as specified by the \code{--includeElectrons} flag.  The hadrons, dihadrons and dipions tuples can be created by using the \code{--includeHadrons}, \code{--includeDihadrons}, and \code{--includeDipions} flags respectively.  If no flag for including a tuple in the output is provided, then the program will terminate without processing any data.  
+ 
+
+\section{Trees generated}
+\begin{itemize}
+\item[electrons] all electrons that pass fiducial, PID, and DIS cuts.  There may be multiple entries per event if there are multiple DIS electrons in the event.
+\item[hadrons] DIS electron + hadron.  There may be multiple entries per event if there are multiple hadrons in the event.  
+\item[dihadrons] DIS electron + leading pion + another hadron (which may or may not be a pion)
+\item[dipions] DIS electron + pion + second pion.  Neither pion is required to be leading.  
+\end{itemize}
+
+\end{document}
