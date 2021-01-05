@@ -1,6 +1,23 @@
 #to create sidis tuples (example):
 
-clas12root -l -b -q ~/sidis_tuples/src/SidisTuples.C+ --in=/work/clas12/rg-a/montecarlo/fall2018/torus-1/clasdis/nobg/DIS_pass1_997_1002.hipo --out=/work/clas12/spaul/example_mc.root --isMC --N=300000 
+clas12root -l -b -q ~/sidis_tuples/src/SidisTuples.C+ --in=/work/clas12/rg-a/montecarlo/fall2018/torus-1/clasdis/nobg/DIS_pass1_997_1002.hipo --out=out.root --isMC --N=300000 --includeElectrons
+
+
+args are 
+
+--N=[number of events to process] (default=entire file) 
+--includeElectrons create electrons tree (see tree definitions below)
+--includeHadrons create hadrons tree
+--includeDihadrons create dihadrons tree
+--includeDipions create dipions tree
+--skipEvents=[number of events to skip before processing events]
+--in=[input file to process] add an input file.  This can be repeated several times to input multiple files
+--out=[output file name] write tuples to target root file
+--isMC add additional entries to tuple, corresponding to truth variables.  
+
+
+
+
 
 # To automate the creation of tuples (multiple files) on auger
 cd auger
