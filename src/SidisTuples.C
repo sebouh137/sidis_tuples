@@ -214,6 +214,7 @@ void SidisTuples(){
    leaf(npp);leaf(npm);
    leaf(nKp);leaf(nKm);
    leaf(nh);
+   leaf(ntracks);
    leaf(z_tot);
 
    
@@ -229,7 +230,7 @@ void SidisTuples(){
    TTree* hadron_tree = createHadronTree ? new TTree("hadrons","hadrons") : NULL;
    tree = hadron_tree;
    leafx(nelectrons);
-   leafx(E);leafx(helicity);leafx(e_p);leafx(e_th);leafx(e_ph);leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W);
+   leafx(E);leafx(helicity);leafx(e_p);leafx(e_th);leafx(e_ph);leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W);leafx(ntracks);
    leaf(h_chi2pid);leaf(h_pid);leaf(h_p);leaf(h_th);leaf(h_ph);leaf(h_DC1x);leaf(h_DC1y);leaf(h_DC2x);leaf(h_DC2y);leaf(h_DC3x);leaf(h_DC3y);leaf(dvz);leaf(z); leaf(h_cm_p);leaf(h_cm_th);leaf(h_cm_ph);leaf(h_cm_eta);leaf(h_cm_pt);
    leaf(h_eta); leaf(dtime); leaf(dtime_corr); 
 
@@ -241,7 +242,7 @@ void SidisTuples(){
 
    TTree* dihadron_tree = createDihadronTree ? new TTree("dihadrons","dihadrons") : NULL;
    tree = dihadron_tree;   
-   leafx(E);leafx(helicity);leafx(e_p);leafx(e_th);leafx(e_ph);leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W); 
+   leafx(E);leafx(helicity);leafx(e_p);leafx(e_th);leafx(e_ph);leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W); leafx(ntracks); 
    
 
    // macro creates fields for two hadrons
@@ -273,14 +274,20 @@ void SidisTuples(){
    TTree* dipion_tree = createDipionTree ? new TTree("dipions","dipions") : NULL;
    tree = dipion_tree;
    leafx(nelectrons);
-   leafx(E);leafx(helicity);leafx(e_p);leafx(e_th);leafx(e_ph);leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W);
-   
-   leaf(pi1_cm_eta);leaf(pi2_cm_eta);leaf(pi1_cm_pt);leaf(pi2_cm_pt);leaf(pi1_z);leaf(pi2_z);leaf(pi1_pid);leaf(pi2_pid);leaf(pi1_cm_ph);leaf(pi2_cm_ph);
+   leafx(E);leafx(helicity);leafx(e_p);leafx(e_th);leafx(e_ph);leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W);leafx(ntracks);
+   leaf(pi1_p);leaf(pi2_p);leaf(pi1_th);leaf(pi2_th);leaf(pi1_ph);leaf(pi2_ph);
+   leaf(pi1_cm_eta);leaf(pi2_cm_eta);leaf(pi1_cm_pt);leaf(pi2_cm_pt);leaf(pi1_z);leaf(pi2_z);leaf(pi1_pid);leaf(pi2_pid);leaf(pi1_cm_ph);leaf(pi2_cm_ph);leaf(pi1_cm_p);leaf(pi2_cm_p);leaf(pi1_cm_th);leaf(pi2_cm_th);
 
    leafx(diff_phi_cm);leafx(diff_eta_cm);leafx(pair_mass);
    
    if(!isMC) tree = NULL;
-   leaf(duplicate_pions);
+   leafx(e_truth_pid);leafx(e_truth_p);leafx(e_truth_th);leafx(e_truth_ph);
+   leaf(pi1_truth_z);
+   leaf(pi1_truth_pid);leaf(pi1_truth_p);leaf(pi1_truth_th);leaf(pi1_truth_ph);leaf(pi1_truth_cm_p);
+   leaf(pi1_truth_cm_th);leaf(pi1_truth_cm_ph);leaf(pi1_truth_cm_eta);leaf(pi1_truth_cm_pt);
+   leaf(pi2_truth_pid);leaf(pi2_truth_p);leaf(pi2_truth_th);leaf(pi2_truth_ph);leaf(pi2_truth_cm_p);leaf(pi2_truth_z);
+   leaf(pi2_truth_cm_th);leaf(pi2_truth_cm_ph);leaf(pi2_truth_cm_eta);leaf(pi2_truth_cm_pt);
+   leafx(diff_phi_cm_truth);leafx(diff_eta_cm_truth);
    
    
 
@@ -455,6 +462,12 @@ void SidisTuples(){
        
        //loop through all particles when searching for hadrons.
        auto parts=c12.getDetParticles();
+       ntracks=0;
+       for(int kk = 0: kk<parts.size();kk++){
+	 int pid = parts[kk]->getPid();
+	 if(db->GetParticle(pid)->Charge() != 0)
+	   ntracks++;
+       }
        //cout << "parts" << endl;
        if(c12.helonline() != NULL)
 	 helicity = c12.helonline()->getHelicity();
@@ -878,6 +891,8 @@ void SidisTuples(){
 		 }
 		 best_match_diff = 9999;
 		 for(int k = 0; k<mcparts->getRows();k++){
+		   if(k == kbest1)
+		     continue;
 		   //cout << "hadron" <<endl;                                                                  
                    TVector3 mc(mcparts->getPx(k),mcparts->getPy(k),mcparts->getPz(k));
                    if(abs(mc.Theta()-h_th)>1*TMath::Pi()/180){
@@ -895,12 +910,16 @@ void SidisTuples(){
                      best_match_diff = diff;
                    }
                  }
-		 if(kbest1 == kbest2 && kbest2 != -1){
-		   duplicate_pions=1;
-		 } else {
-		   duplicate_pions=0;
+		 if(kbest1 >=0){
+		   double pion_mass = db->GetParticle(211)->Mass();
+		   PxPyPzMVector mc(mcparts->getPx(k),mcparts->getPy(k),mcparts->getPz(k), pion_mass);
+		   pi1_truth_p = mc->P();
+		   pi1_truth_th = mc->Theta();
+		   pi1_truth_ph = mc->Phi();
+		   pi1_truth_cm_pt = mc->Pt();
+		   pi1_truth_cm_eta = mc->Eta();
+                   pi1_truth_cm_ph = mc->Phi();
 		 }
-		 
 	       }
 	       if(dipion_tree != NULL)
 		 dipion_tree->Fill();
