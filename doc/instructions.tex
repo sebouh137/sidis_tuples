@@ -60,7 +60,7 @@
 \hyphenation{ALPGEN}
 \hyphenation{EVTGEN}
 \hyphenation{PYTHIA}
-
+\usepackage{verbatim}
 \usepackage{setspace}
 \usepackage{graphicx}
 \usepackage{wrapfig}
@@ -85,14 +85,13 @@ Analysis Documentation for Clas12 Sidis Tuple Maker
 \newpage
 
 \section{How to make tuples}
-Example:
+Example:\\
+\begin{verbatim}
+./tuplemaker.sh --in=/work/clas12/rg-a/montecarlo/fall2018/torus-1/clasdis/nobg/DIS_pass1_997_1002.hipo
+--out=mc_electrons.root --isMC --skipEvents=600000 --N=300000 --includeElectrons
+ \end{verbatim}
 
-
-\begin{verbatim}clas12root -l -b -q src/SidisTuples.C+ 
---in=/work/clas12/rg-a/montecarlo/fall2018/torus-1/clasdis/nobg/DIS_pass1_997_1002.hipo 
- --out=mc_electrons.root --isMC --skipEvents=600000 --N=300000 --includeElectrons\end{verbatim}
-
-This creates opens the file \code{/work/clas12/rg-a/montecarlo/fall2018/torus-1/clasdis/nobg/DIS\_pass1\_997\_1002.hipo}, and outputs a file \code{mc\_electrons.root}.  The \code{--isMC} flag tells the program that the input file is from a Monte-Carlo simulation.  The optional \code{--skipEvents} and \code{--N} arguments tells the program to skip the first 600k events, and then processes the next 300k events.  The output contains only the electrons tuple, as specified by the \code{--includeElectrons} flag.  The hadrons, dihadrons and dipions tuples can be created by using the \code{--includeHadrons}, \code{--includeDihadrons}, and \code{--includeDipions} flags respectively.  If no flag for including a tuple in the output is provided, then the program will terminate without processing any data.  
+This creates opens the file \code{/work/clas12/rg-a/montecarlo/fall2018/torus-1/clasdis/nobg/DIS\_pass1\_997\_1002.hipo}, and outputs a file \code{mc\_electrons.root}.  The \code{-{}-isMC} flag tells the program that the input file is from a Monte-Carlo simulation.  The optional \code{-{}-skipEvents} and \code{-{}-N} arguments tells the program to skip the first 600k events, and then processes the next 300k events.  The output contains only the electrons tuple, as specified by the \code{-{}-includeElectrons} flag.  The hadrons, dihadrons and dipions tuples can be created by using the \code{-{}-includeHadrons}, \code{-{}-includeDihadrons}, and \code{-{}-includeDipions} flags respectively.  If no flag for including a tuple in the output is provided, then the program will terminate without processing any data.  
  
 
 \section{Trees generated}
