@@ -28,16 +28,6 @@ void SetLorentzVector(TLorentzVector &p4, clas12::region_part_ptr rp, double mas
 
 }
 
-/*bool fillHistsDC(clas12::region_part_ptr p, TH2* dc1, TH2* dc2, TH2* dc3){
-  if (p->traj(DC,DC1)->getX() != 0)
-    dc1->Fill(p->traj(DC,DC1)->getX(),p->traj(DC,DC1)->getY());
-  else return 0;
-  if (p->traj(DC,DC2)->getX() != 0)
-    dc2->Fill(p->traj(DC,DC2)->getX(),p->traj(DC,DC2)->getY());
-  if (p->traj(DC,DC3)->getX() != 0)
-    dc3->Fill(p->traj(DC,DC3)->getX(),p->traj(DC,DC3)->getY());
-  return 1;
-  }*/
 
 
 double s30 = sin(TMath::Pi()/6);
@@ -282,11 +272,11 @@ void SidisTuples(){
    
    if(!isMC) tree = NULL;
    leafx(e_truth_pid);leafx(e_truth_p);leafx(e_truth_th);leafx(e_truth_ph);
-   leaf(pi1_truth_z);
-   leaf(pi1_truth_pid);leaf(pi1_truth_p);leaf(pi1_truth_th);leaf(pi1_truth_ph);leaf(pi1_truth_cm_p);
-   leaf(pi1_truth_cm_th);leaf(pi1_truth_cm_ph);leaf(pi1_truth_cm_eta);leaf(pi1_truth_cm_pt);
-   leaf(pi2_truth_pid);leaf(pi2_truth_p);leaf(pi2_truth_th);leaf(pi2_truth_ph);leaf(pi2_truth_cm_p);leaf(pi2_truth_z);
-   leaf(pi2_truth_cm_th);leaf(pi2_truth_cm_ph);leaf(pi2_truth_cm_eta);leaf(pi2_truth_cm_pt);
+   
+   leaf(pi1_truth_pid);leaf(pi1_truth_p);leaf(pi1_truth_th);leaf(pi1_truth_ph);leaf(pi1_truth_z);
+   leaf(pi1_truth_cm_ph);leaf(pi1_truth_cm_eta);leaf(pi1_truth_cm_pt);
+   leaf(pi2_truth_pid);leaf(pi2_truth_p);leaf(pi2_truth_th);leaf(pi2_truth_ph);leaf(pi2_truth_z);
+   leaf(pi2_truth_cm_ph);leaf(pi2_truth_cm_eta);leaf(pi2_truth_cm_pt);
    leafx(diff_phi_cm_truth);leafx(diff_eta_cm_truth);
    
    
@@ -734,7 +724,7 @@ void SidisTuples(){
 	   
 	   
 	   
-	   //leading pion in a high-z pion, and a second hadron of any type
+	   //leading pion is a high-z pion, and a second hadron of any type
 	   if(z > 0.5 && abs(h_pid)==211){
 	     h1_pid = h_pid;
 	     h1_p = h_p;
@@ -850,6 +840,9 @@ void SidisTuples(){
 	     SetLorentzVector(had2,h2, db->GetParticle(211)->Mass());
 	     if(abs(pid) == 211 && had2.E()/nu < z){
 	       pi1_z = z;
+             pi1_p = had->P();
+             pi1_th = had->Theta();
+             pi1_ph = had->Phi();
 	       toCM(cm, had2,had2_cm);
 	       pi1_cm_pt = h_cm_pt;
 	       pi1_cm_ph = h_cm_ph;
@@ -857,6 +850,9 @@ void SidisTuples(){
 	       pi1_pid = h_pid;
 	       
 	       pi2_z = had2.E()/nu;
+             pi2_p = had2->P();
+             pi2_th = had2->Theta();
+             pi2_ph = had2->Phi();
 	       pi2_cm_pt = had2_cm.Pt();
 	       pi2_cm_ph = had2_cm.Phi();
 	       pi2_cm_eta = had2_cm.Eta();
@@ -912,17 +908,35 @@ void SidisTuples(){
                  }
 		 if(kbest1 >=0){
 		   double pion_mass = db->GetParticle(211)->Mass();
-		   PxPyPzMVector mc(mcparts->getPx(k),mcparts->getPy(k),mcparts->getPz(k), pion_mass);
-		   pi1_truth_p = mc->P();
-		   pi1_truth_th = mc->Theta();
-		   pi1_truth_ph = mc->Phi();
-		   pi1_truth_cm_pt = mc->Pt();
-		   pi1_truth_cm_eta = mc->Eta();
-                   pi1_truth_cm_ph = mc->Phi();
+		   PxPyPzMVector pi1_truth(mcparts->getPx(kbest1),mcparts->getPy(kbest1),mcparts->getPz(kbest1), pion_mass);
+		   pi1_truth_pid = mcparts->getPid(kbest1);
+            pi2_z = pi1_truth->E()/(E-e_truth_p);
+             pi1_truth_p = pi1_truth->P();
+		   pi1_truth_th = pi1_truth->Theta();
+		   pi1_truth_ph = pi1_truth->Phi();
+           TLorentzVector pi1_truth_cm;
+           toCM(cm_truth, pi1_truth,pi1_truth_cm);
+		   pi1_truth_cm_pt = pi1_truth_cm->Pt();
+		   pi1_truth_cm_eta = pi1_truth_cm->Eta();
+           pi1_truth_cm_ph = mc->Phi();
 		 }
-	       }
+               if(kbest2 >=0){
+                 double pion_mass = db->GetParticle(211)->Mass();
+                   pi2_truth_pid = mcparts->getPid(kbest2);
+                 PxPyPzMVector pi2_truth(mcparts->getPx(kbest2),mcparts->getPy(kbest2),mcparts->getPz(kbest2), pion_mass);
+                   pi2_z = pi2_truth->E()/(E-e_truth_p);
+                 pi2_truth_p = pi2_truth->P();
+                 pi2_truth_th = pi2_truth->Theta();
+                 pi2_truth_ph = pi2_truth->Phi();
+                 TLorentzVector pi2_truth_cm;
+                 toCM(cm_truth, pi2_truth,pi1_truth_cm);
+                 pi2_truth_cm_pt = pi2_truth_cm->Pt();
+                 pi2_truth_cm_eta = pi2_truth_cm->Eta();
+                pi2_truth_cm_ph = mc->Phi();
+               }
+           }
 	       if(dipion_tree != NULL)
-		 dipion_tree->Fill();
+               dipion_tree->Fill();
 	       
 	     }
 	   }
