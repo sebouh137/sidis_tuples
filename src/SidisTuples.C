@@ -167,8 +167,8 @@ void SidisTuples(){
     } else if (opt.Contains("--includeElectrons")){
       createElectronTree = 1;
       cout << "create electron tree" <<endl;
-    } else if (opt.Contains("--skipEvents=")){
-
+    } else if (opt.Contains("--debug")){
+      debug=1;
     }
 
    }
@@ -446,25 +446,7 @@ void SidisTuples(){
        // get particles by type
 
        auto electrons=c12.getByID(11);
-       //cout << "electrons" <<endl;
-       //cout << electrons.size()<< "electrons" << endl;
-      //if(electrons.size() > 1)
-       //continue;
-
-       //auto gammas=c12.getByID(22);
        
-       //loop through all particles when searching for hadrons.
-       auto parts=c12.getDetParticles();
-       ntracks=0;
-       if(debug) cout << "counting tracks"<<endl;
-       
-       for(int kk = 0; kk<parts.size();kk++){
-	 int pid = parts[kk]->getPid();
-	 if(db->GetParticle(pid)!= NULL && db->GetParticle(pid)->Charge() != 0)
-	   ntracks++;
-       }
-       if(debug) cout << ntracks << " tracks" << endl;
-       //if(debug) cout << "parts" << endl;
        if(c12.helonline() != NULL)
 	 helicity = c12.helonline()->getHelicity();
        //if(debug) cout << "helicity" << endl;
@@ -474,6 +456,7 @@ void SidisTuples(){
        if(isMC){
 	 mcparts = c12.mcparts();
        }
+       auto parts=c12.getDetParticles(); 
        /*if(electrons.size() == 2){
 	 if(debug) cout << "electrons" << endl;
 	 if(debug) cout << electrons[0]->par()->getP() <<endl;
@@ -552,6 +535,36 @@ void SidisTuples(){
 	 //if(useCuts && y>cut_ymax)
 	 //continue;
 	 cm = beam+target-el;
+
+	 
+	 auto parts=c12.getDetParticles();
+	 ntracks=0;
+	 if(debug) cout << "counting tracks"<<endl;
+	 for(int kk = 0; kk<parts.size();kk++){
+	   auto part = parts[kk];
+	   int pid = part->getPid();
+
+	   if(db->GetParticle(pid) == NULL || db->GetParticle(pid)->Charge() == 0)
+	     continue;
+	   double dtime = electrons[i]->getTime()-part->getTime();
+	   
+	   double mass = db->GetParticle(pid)->Mass();
+	   double c = 29.9792458; //cm/ns
+	   double dtime_corr =dtime-electrons[i]->getPath()/c+part->getPath()/(part->getBetaFromP()*c);
+	   if(abs(dtime_corr) > cut_dtime_corr)
+	     continue;
+	   double dvz = electrons[i]->par()->getVz()-part->par()->getVz();
+	   if(dvz < cut_dvzmin || dvz > cut_dvzmax)
+	     continue;
+	   ntracks++;
+	   
+	   
+	 }
+	 if(debug) cout << ntracks << " tracks" << endl;
+	 //if(debug) cout << "parts" << endl;
+	 
+
+
 	 //if(debug) cout << "cm:"<<endl;
 	 //cm.Print();
 	 npip = 0;
@@ -568,8 +581,9 @@ void SidisTuples(){
 	 z_tot = 0;
 	 TLorentzVector e_truth;
 	 TLorentzVector cm_truth;
-	 if(debug) cout << "filling electron MC" << endl;
+
 	 if(isMC){
+	   if(debug) cout << "filling electron MC" << endl;
 	   double best_match_diff = 99999;
 	   e_truth_p = 0;
 	   e_truth_th = 0;
