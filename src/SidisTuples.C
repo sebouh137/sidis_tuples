@@ -18,8 +18,10 @@
 #include <TLeaf.h>
 #include "clas12reader.h"
 #include "helonline.h"
+//#include "Math/Vector4Dfwd.h"
 using namespace clas12;
 
+int debug = 0;
 double defval = 0;
 
 void SetLorentzVector(TLorentzVector &p4, clas12::region_part_ptr rp, double mass){
@@ -222,12 +224,12 @@ void SidisTuples(){
    leafx(nelectrons);
    leafx(E);leafx(helicity);leafx(e_p);leafx(e_th);leafx(e_ph);leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W);leafx(ntracks);
    leaf(h_chi2pid);leaf(h_pid);leaf(h_p);leaf(h_th);leaf(h_ph);leaf(h_DC1x);leaf(h_DC1y);leaf(h_DC2x);leaf(h_DC2y);leaf(h_DC3x);leaf(h_DC3y);leaf(dvz);leaf(z); leaf(h_cm_p);leaf(h_cm_th);leaf(h_cm_ph);leaf(h_cm_eta);leaf(h_cm_pt);
-   leaf(h_eta); leaf(dtime); leaf(dtime_corr); 
+   leaf(h_eta); leaf(dtime); leaf(dtime_corr); leaf(missing_mass);
 
    
    if(!isMC) tree = NULL;
    leafx(e_truth_pid);leafx(e_truth_p);leafx(e_truth_th);leafx(e_truth_ph);
-   leaf(h_truth_pid);leaf(h_truth_p);leaf(h_truth_th);leaf(h_truth_ph);leaf(h_truth_cm_p);leaf(h_truth_cm_th);leaf(h_truth_cm_ph);leaf(h_truth_cm_eta);leaf(h_truth_cm_pt);leaf(h_truth_z);
+   leaf(h_truth_pid);leaf(h_truth_p);leaf(h_truth_th);leaf(h_truth_ph);leaf(h_truth_cm_p);leaf(h_truth_cm_th);leaf(h_truth_cm_ph);leaf(h_truth_cm_eta);leaf(h_truth_cm_pt);leaf(h_truth_z);leaf(missing_mass_truth);
    
 
    TTree* dihadron_tree = createDihadronTree ? new TTree("dihadrons","dihadrons") : NULL;
@@ -239,12 +241,13 @@ void SidisTuples(){
 #define leaf2(name) double h1_##name=0; double h2_##name=0; if(tree != NULL) {tree->Branch((TString)"h1_"+#name,&h1_##name,(TString)"h1_"+#name+(TString)"/D"); tree->Branch((TString)"h2_"+#name,&h2_##name,(TString)"h2_"+#name+(TString)"/D");}
    leaf2(chi2pid);leaf2(pid);leaf2(p);leaf2(th);leaf2(ph);leaf2(z);leaf2(eta);
    leaf2(cm_p);leaf2(cm_th);leaf2(cm_ph);leaf2(cm_eta);leaf2(cm_pt);
-   leaf(pair_mass);
+   leaf(pair_mass);leaf(mx_eh1h2x);leaf(mx_eh1x);leaf(mx_eh2x);
    leaf(diff_eta);
    leaf(diff_phi);
    leafx(nelectrons);
    leaf(diff_phi_cm);
    leaf(diff_eta_cm);
+
 
 
    
@@ -255,7 +258,7 @@ void SidisTuples(){
    leaf(h1_truth_cm_th);leaf(h1_truth_cm_ph);leaf(h1_truth_cm_eta);leaf(h1_truth_cm_pt);
    leaf(h2_truth_pid);leaf(h2_truth_p);leaf(h2_truth_th);leaf(h2_truth_ph);leaf(h2_truth_cm_p);leaf(h2_truth_z);
    leaf(h2_truth_cm_th);leaf(h2_truth_cm_ph);leaf(h2_truth_cm_eta);leaf(h2_truth_cm_pt);
-   leaf(diff_phi_cm_truth);leaf(diff_eta_cm_truth);
+   leaf(diff_phi_cm_truth);leaf(diff_eta_cm_truth);leaf(pair_mass_truth);leaf(mx_eh1h2x_truth);leaf(mx_eh1x_truth);leaf(mx_eh2x_truth);
    
 
    // A small tree for storing dipion events, without requiring one of them to be leading
@@ -266,9 +269,9 @@ void SidisTuples(){
    leafx(nelectrons);
    leafx(E);leafx(helicity);leafx(e_p);leafx(e_th);leafx(e_ph);leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W);leafx(ntracks);
    leaf(pi1_p);leaf(pi2_p);leaf(pi1_th);leaf(pi2_th);leaf(pi1_ph);leaf(pi2_ph);
-   leaf(pi1_cm_eta);leaf(pi2_cm_eta);leaf(pi1_cm_pt);leaf(pi2_cm_pt);leaf(pi1_z);leaf(pi2_z);leaf(pi1_pid);leaf(pi2_pid);leaf(pi1_cm_ph);leaf(pi2_cm_ph);leaf(pi1_cm_p);leaf(pi2_cm_p);leaf(pi1_cm_th);leaf(pi2_cm_th);
+   leaf(pi1_cm_eta);leaf(pi2_cm_eta);leaf(pi1_cm_pt);leaf(pi2_cm_pt);leaf(pi1_z);leaf(pi2_z);leaf(pi1_pid);leaf(pi2_pid);leaf(pi1_cm_ph);leaf(pi2_cm_ph);
 
-   leafx(diff_phi_cm);leafx(diff_eta_cm);leafx(pair_mass);
+   leafx(diff_phi_cm);leafx(diff_eta_cm);leafx(pair_mass);leaf(mx_epi1pi2x);leaf(mx_epi1x);leaf(mx_epi2x);
    
    if(!isMC) tree = NULL;
    leafx(e_truth_pid);leafx(e_truth_p);leafx(e_truth_th);leafx(e_truth_ph);
@@ -277,7 +280,7 @@ void SidisTuples(){
    leaf(pi1_truth_cm_ph);leaf(pi1_truth_cm_eta);leaf(pi1_truth_cm_pt);
    leaf(pi2_truth_pid);leaf(pi2_truth_p);leaf(pi2_truth_th);leaf(pi2_truth_ph);leaf(pi2_truth_z);
    leaf(pi2_truth_cm_ph);leaf(pi2_truth_cm_eta);leaf(pi2_truth_cm_pt);
-   leafx(diff_phi_cm_truth);leafx(diff_eta_cm_truth);
+   leafx(diff_phi_cm_truth);leafx(diff_eta_cm_truth);leafx(pair_mass_truth);leaf(mx_epi1pi2x_truth);leaf(mx_epi1x_truth);leaf(mx_epi2x_truth);
    
    
 
@@ -453,15 +456,18 @@ void SidisTuples(){
        //loop through all particles when searching for hadrons.
        auto parts=c12.getDetParticles();
        ntracks=0;
-       for(int kk = 0: kk<parts.size();kk++){
+       if(debug) cout << "counting tracks"<<endl;
+       
+       for(int kk = 0; kk<parts.size();kk++){
 	 int pid = parts[kk]->getPid();
-	 if(db->GetParticle(pid)->Charge() != 0)
+	 if(db->GetParticle(pid)!= NULL && db->GetParticle(pid)->Charge() != 0)
 	   ntracks++;
        }
-       //cout << "parts" << endl;
+       if(debug) cout << ntracks << " tracks" << endl;
+       //if(debug) cout << "parts" << endl;
        if(c12.helonline() != NULL)
 	 helicity = c12.helonline()->getHelicity();
-       //cout << "helicity" << endl;
+       //if(debug) cout << "helicity" << endl;
        TLorentzVector el(0,0,0,db->GetParticle(11)->Mass());
        
        mcpar_ptr mcparts;
@@ -469,16 +475,17 @@ void SidisTuples(){
 	 mcparts = c12.mcparts();
        }
        /*if(electrons.size() == 2){
-	 cout << "electrons" << endl;
-	 cout << electrons[0]->par()->getP() <<endl;
-	 cout << electrons[1]->par()->getP() <<endl;
+	 if(debug) cout << "electrons" << endl;
+	 if(debug) cout << electrons[0]->par()->getP() <<endl;
+	 if(debug) cout << electrons[1]->par()->getP() <<endl;
 	 }*/
        nelectrons = electrons.size();
        int electrons_passCuts = 0;
        vector<int> matchedMCindices = {};
-       //cout <<"CHECK 0: " << nelectrons << " electrons" << endl;
+       //if(debug) cout <<"CHECK 0: " << nelectrons << " electrons" << endl;
        for(int i=0; i<nelectrons; i++){
-	 //cout << "CHECK 0.5" << endl;
+	 if(debug) cout << "starting electron loop" << endl;
+	 //if(debug) cout << "CHECK 0.5" << endl;
 	 //if(electrons.size()>1) continue;
 	 e_DC1x=electrons[i]->traj(DC,DC1)->getX();
 	 e_DC1y=electrons[i]->traj(DC,DC1)->getY();
@@ -488,16 +495,16 @@ void SidisTuples(){
 	 e_DC3y=electrons[i]->traj(DC,DC3)->getY();
 	 if(!dcOK(electrons[i]) || !pcalOK(electrons[i]))
 	   continue;
-	 //cout << "dc and pcal ok"<<endl;
+	 //if(debug) cout << "dc and pcal ok"<<endl;
 	 //if(!dcok)
 	 //  continue;
-	 //cout << "electron" << endl;
+	 //if(debug) cout << "electron" << endl;
 
 	 //the electron mass is a myth.  I could set this to zero and nothing would change.
-	 //cout << "CHECK 1" <<endl;
+	 //if(debug) cout << "CHECK 1" <<endl;
 	 SetLorentzVector(el,electrons[i], 0.000511); 
 	 e_p = el.P();
-	 //cout<< "e_p: " << e_p <<" "<< el.P() << endl;
+	 //if(debug) cout<< "e_p: " << e_p <<" "<< el.P() << endl;
 	 e_th = el.Theta();
 	 e_ph = el.Phi();
 	 //if(theta*180/3.14159265 <=7)
@@ -505,7 +512,7 @@ void SidisTuples(){
 	 //if(p<0.01*E)
 	 //continue;
 	 
-	 //cout << "CHECK 2"<<endl;
+	 //if(debug) cout << "CHECK 2"<<endl;
 	 double ecal = electrons[i]->getDetEnergy();
 	 
 	 e_ecalfrac = ecal/e_p;
@@ -521,7 +528,7 @@ void SidisTuples(){
 	 if(e_pcal<cut_pcalmin)
 	   continue;
 	 
-	 //cout << "/electron"<<endl;
+	 //if(debug) cout << "/electron"<<endl;
 	 
 	 e_vz = electrons[i]->par()->getVz();
 
@@ -529,9 +536,9 @@ void SidisTuples(){
 	   continue;
 	 
 	 //done with electron id cuts
+	 if(debug) cout << "check 2" <<endl;
 
-
-	 //cout << "now for electron kinematics cuts"<<endl;
+	 //if(debug) cout << "now for electron kinematics cuts"<<endl;
 	 // now for electron kinematics cuts
 	 Q2 = -(beam-el)*(beam-el);
 	 W = (target+beam-el).M();
@@ -545,7 +552,7 @@ void SidisTuples(){
 	 //if(useCuts && y>cut_ymax)
 	 //continue;
 	 cm = beam+target-el;
-	 //cout << "cm:"<<endl;
+	 //if(debug) cout << "cm:"<<endl;
 	 //cm.Print();
 	 npip = 0;
 	 npim = 0;
@@ -561,7 +568,7 @@ void SidisTuples(){
 	 z_tot = 0;
 	 TLorentzVector e_truth;
 	 TLorentzVector cm_truth;
-	 //cout << "filling electron MC" << endl;
+	 if(debug) cout << "filling electron MC" << endl;
 	 if(isMC){
 	   double best_match_diff = 99999;
 	   e_truth_p = 0;
@@ -572,16 +579,16 @@ void SidisTuples(){
 	   for(int k = 0; k<mcparts->getRows();k++){
 	     //if(mcparts->getPid(k) != 11)
 	     //continue;
-	     //cout << "e passed charge"<<endl;
+	     //if(debug) cout << "e passed charge"<<endl;
 	     mc = {mcparts->getPx(k),mcparts->getPy(k),mcparts->getPz(k)};
-	     //cout << mc.Theta() << "\t" << e_th << endl;
+	     //if(debug) cout << mc.Theta() << "\t" << e_th << endl;
 	     if(abs(mc.Theta()-e_th)>1*TMath::Pi()/180){
 	       continue;
 	     }
-	     //cout << "e passed phi" <<endl;
+	     //if(debug) cout << "e passed phi" <<endl;
 	     if(abs(mc.Theta()-e_th)>1*TMath::Pi()/180)
 	       continue;
-	     //cout << "e passed phi" <<endl;
+	     //if(debug) cout << "e passed phi" <<endl;
 	     double diff = hypot(angle(mc.Phi()-e_ph)*sin(e_th),mc.Theta()-e_th);
 	     //closest match which has negative charge
 	     if(diff < best_match_diff){
@@ -604,13 +611,14 @@ void SidisTuples(){
 	     e_truth_vz = mcparts->getVz(kbest);
 	   }
 	 }
+	 if(debug) cout << " check 1"<< endl;
+
 	 
-
-
 	 bool found_leader = 0, found_second=0;
-	 //loop through all particles, only choosing charged hadrons. 
+	 //loop through all particles, only choosing charged hadrons.
+	 if(hadron_tree != NULL || dihadron_tree != NULL || dipion_tree != NULL){
 	 for(int j =0; j<parts.size();j++){
-
+	   if(debug) cout << "hadrons loop"<< endl;
 	   auto h = parts[j];
 	   h_pid = h->getPid();
 	   if(h_pid != 211 && h_pid != -211 && h_pid != 2212 && h_pid != -2212 && h_pid != 321 && h_pid != -321)
@@ -624,14 +632,14 @@ void SidisTuples(){
 	   
 	   dtime = electrons[i]->getTime()-h->getTime();
 	   
-	   //cout << "dc"<<endl;
+	   //if(debug) cout << "dc"<<endl;
 	   if(!dcOK(h))
 	     continue;
 
            //bool dcok = fillHistsDC(pips[j],hpipdc1xy,hpipdc2xy,hpipdc3xy);
 	   //if(!dcok)
 	   //continue;
-	   //cout << "pip" << endl;
+	   //if(debug) cout << "pip" << endl;
 	   double mass = db->GetParticle(h_pid)->Mass();
 	   SetLorentzVector(had,h, mass);
 	   double c = 29.9792458; //cm/ns 
@@ -645,7 +653,7 @@ void SidisTuples(){
 	   
 	   //h_pid = h->par()->getPid();
 	   h_chi2pid = h->par()->getChi2Pid();
-	   //cout << "chi2pid" << endl;
+	   //if(debug) cout << "chi2pid" << endl;
 	   if(useCuts && abs(h_chi2pid) > cut_chi2pidmax)
 	     continue;
 	   
@@ -663,11 +671,12 @@ void SidisTuples(){
 	   h_cm_eta = h_cm.PseudoRapidity();
 	   h_cm_ph = h_cm.Phi();
 	   h_cm_pt = h_cm.Pt();
-	   //cout << h_cm_p << " " << pi_cm_th << " " << pi_cm_ph << endl;
+	   //if(debug) cout << h_cm_p << " " << pi_cm_th << " " << pi_cm_ph << endl;
 	   
 	   TLorentzVector h_truth;
 	   if(isMC){
 	     double best_match_diff = 9999;
+	     h_truth_pid = 0;
 	     h_truth_p = 0;
 	     h_truth_th = 0;
 	     h_truth_ph = 0;
@@ -678,22 +687,22 @@ void SidisTuples(){
 	     h_truth_cm_pt = 0;
 	     int kbest = -1;
 	     for(int k = 0; k<mcparts->getRows();k++){
-	       //cout << "hadron" <<endl;
+	       //if(debug) cout << "hadron" <<endl;
 	       if(db->GetParticle(h_pid)->Charge() != db->GetParticle(mcparts->getPid(k))->Charge())
 	       continue;
-	       //cout << "passed charge" << endl;
+	       //if(debug) cout << "passed charge" << endl;
 	       TVector3 mc(mcparts->getPx(k),mcparts->getPy(k),mcparts->getPz(k));
 	       if(abs(mc.Theta()-h_th)>1*TMath::Pi()/180){
 		 continue;
 	       }
-	       //cout << "passed theta" << endl;
+	       //if(debug) cout << "passed theta" << endl;
 	       if(abs(angle(mc.Phi()-h_ph))>3*TMath::Pi()/180){
 		 continue;
 	       }
-	       //cout << "passed phi" <<endl;
+	       //if(debug) cout << "passed phi" <<endl;
 	       double diff = hypot(angle(mc.Phi()-h_ph)*sin(h_th),mc.Theta()-h_th);
 	       //closest match which has negative charge
-	       //cout << "diff " << diff << endl;
+	       //if(debug) cout << "diff " << diff << endl;
 	       if(diff < best_match_diff){
 		 kbest = k;
 		 best_match_diff = diff;
@@ -719,11 +728,13 @@ void SidisTuples(){
 	       h_truth_cm_pt = h_truth_cm.Pt();
 	     } 
 	   }
-	   if(hadron_tree != NULL)
+	   if(hadron_tree != NULL){
+	     missing_mass = (beam+target-el-had).M();
 	     hadron_tree->Fill();
+	   }
 	   
 	   
-	   
+	   if(debug) cout << "filled hadron tree"<< endl;
 	   //leading pion is a high-z pion, and a second hadron of any type
 	   if(z > 0.5 && abs(h_pid)==211){
 	     h1_pid = h_pid;
@@ -786,8 +797,11 @@ void SidisTuples(){
              }
 	   }
 	   if(found_leader && found_second){
-	     //cout << "masses "  << p1.M() << "  " << p2.M() <<endl;
+	     //if(debug) cout << "masses "  << p1.M() << "  " << p2.M() <<endl;
 	     pair_mass = (h1+h2).M();
+	     mx_eh1h2x = (beam+target-el-h1-h2).M();
+	     mx_eh1x = (beam+target-el-h1).M();
+	     mx_eh2x = (beam+target-el-h2).M();
 	     diff_eta = h1_eta-h2_eta;
 	     double PI = TMath::Pi();
 	     diff_phi = h1_ph-h2_ph;
@@ -806,6 +820,7 @@ void SidisTuples(){
 	       diff_phi_cm_truth = h2_truth_cm_ph-h1_truth_cm_ph;
 	       diff_eta_cm_truth = h2_truth_cm_eta-h1_truth_cm_eta;
 	     }
+	     
 	     if(dihadron_tree != NULL)
 	       dihadron_tree->Fill();
 	   } 
@@ -830,9 +845,10 @@ void SidisTuples(){
 	 electrons_passCuts++;
 
 	 //dipion tree
+	 if(debug) cout << "checking for dipions" << endl;
 	 if(abs(h_pid) == 211 && createDipionTree){
 	   for(int k = 0; k<parts.size();k++){
-	     
+	     if(debug) cout << "check1" << endl;
 	     auto h2 = parts[k];
 	     int pid = h2->getPid();
 	     TLorentzVector had2;
@@ -840,9 +856,9 @@ void SidisTuples(){
 	     SetLorentzVector(had2,h2, db->GetParticle(211)->Mass());
 	     if(abs(pid) == 211 && had2.E()/nu < z){
 	       pi1_z = z;
-             pi1_p = had->P();
-             pi1_th = had->Theta();
-             pi1_ph = had->Phi();
+	       pi1_p = had.P();
+	       pi1_th = had.Theta();
+	       pi1_ph = had.Phi();
 	       toCM(cm, had2,had2_cm);
 	       pi1_cm_pt = h_cm_pt;
 	       pi1_cm_ph = h_cm_ph;
@@ -850,17 +866,38 @@ void SidisTuples(){
 	       pi1_pid = h_pid;
 	       
 	       pi2_z = had2.E()/nu;
-             pi2_p = had2->P();
-             pi2_th = had2->Theta();
-             pi2_ph = had2->Phi();
+	       pi2_p = had2.P();
+	       pi2_th = had2.Theta();
+	       pi2_ph = had2.Phi();
 	       pi2_cm_pt = had2_cm.Pt();
 	       pi2_cm_ph = had2_cm.Phi();
 	       pi2_cm_eta = had2_cm.Eta();
 	       pi2_pid = pid;
 	       diff_phi_cm = angle(pi1_cm_ph-pi2_cm_ph);
 	       diff_eta_cm = pi1_cm_eta-pi2_cm_eta;
-	       pair_mass = (had2+had)*(had2+had);
+	       pair_mass = (had2+had).M();
+	       mx_epi1pi2x = (beam+target-el-had-had2).M();
+	       mx_epi1x = (beam+target-el-had).M();
+	       mx_epi2x = (beam+target-el-had2).M();
 	       if(isMC){
+		 pi1_truth_z=0;
+		 pi1_truth_pid=0;
+		 pi1_truth_p=0;
+		 pi1_truth_th=0;
+		 pi1_truth_ph=0;
+		 pi1_truth_cm_pt=0;
+		 pi1_truth_cm_ph=0;
+		 pi1_truth_cm_eta=0;
+
+		 pi2_truth_z=0;
+                 pi2_truth_pid=0;
+                 pi2_truth_p=0;
+                 pi2_truth_th=0;
+                 pi2_truth_ph=0;
+                 pi2_truth_cm_pt=0;
+                 pi2_truth_cm_ph=0;
+                 pi2_truth_cm_eta=0;
+
 		 double p1_p = had.P();
 		 double pi2_th = had2.Theta();
 		 double pi2_ph = had2.Phi();
@@ -868,7 +905,7 @@ void SidisTuples(){
 		 int kbest1 = -1;
 		 int kbest2 = -1;
 		 for(int k = 0; k<mcparts->getRows();k++){
-		     //cout << "hadron" <<endl;
+		     //if(debug) cout << "hadron" <<endl;
 		   TVector3 mc(mcparts->getPx(k),mcparts->getPy(k),mcparts->getPz(k));
 		   if(abs(mc.Theta()-pi2_th)>1*TMath::Pi()/180){
 		     continue;
@@ -876,20 +913,21 @@ void SidisTuples(){
 		   if(abs(angle(mc.Phi()-pi2_ph))>3*TMath::Pi()/180){
 		     continue;
 		   }
-		   //cout << "passed phi" <<endl;                                   
+		   //if(debug) cout << "passed phi" <<endl;                                   
 		   double diff = hypot(angle(mc.Phi()-pi2_ph)*sin(pi2_th),mc.Theta()-pi2_th);
 		   //closest match which has negative charge                        
-		   //cout << "diff " << diff << endl;                               
+		   //if(debug) cout << "diff " << diff << endl;                               
 		   if(diff < best_match_diff){
 		     kbest1 = k;
 		     best_match_diff = diff;
 		   }
 		 }
+		 if(debug) cout << "loop on mc" << endl;
 		 best_match_diff = 9999;
 		 for(int k = 0; k<mcparts->getRows();k++){
 		   if(k == kbest1)
 		     continue;
-		   //cout << "hadron" <<endl;                                                                  
+		   //if(debug) cout << "hadron" <<endl;                                                                  
                    TVector3 mc(mcparts->getPx(k),mcparts->getPy(k),mcparts->getPz(k));
                    if(abs(mc.Theta()-h_th)>1*TMath::Pi()/180){
                      continue;
@@ -897,53 +935,66 @@ void SidisTuples(){
                    if(abs(angle(mc.Phi()-h_ph))>3*TMath::Pi()/180){
                      continue;
                    }
-                   //cout << "passed phi" <<endl;                                                                
+                   //if(debug) cout << "passed phi" <<endl;                                                                
                    double diff = hypot(angle(mc.Phi()-pi2_ph)*sin(pi2_th),mc.Theta()-pi2_th);
                    //closest match which has negative charge                                                     
-                   //cout << "diff " << diff << endl;                                                            
+                   //if(debug) cout << "diff " << diff << endl;                                                            
                    if(diff < best_match_diff){
                      kbest2 = k;
                      best_match_diff = diff;
                    }
                  }
+		 TLorentzVector pi1_truth, pi2_truth;
+
 		 if(kbest1 >=0){
 		   double pion_mass = db->GetParticle(211)->Mass();
-		   PxPyPzMVector pi1_truth(mcparts->getPx(kbest1),mcparts->getPy(kbest1),mcparts->getPz(kbest1), pion_mass);
+		   pi1_truth = {mcparts->getPx(kbest1),mcparts->getPy(kbest1),mcparts->getPz(kbest1), 0};
+		   pi1_truth.SetE(hypot(pi1_truth.P(),pion_mass));
 		   pi1_truth_pid = mcparts->getPid(kbest1);
-            pi2_z = pi1_truth->E()/(E-e_truth_p);
-             pi1_truth_p = pi1_truth->P();
-		   pi1_truth_th = pi1_truth->Theta();
-		   pi1_truth_ph = pi1_truth->Phi();
-           TLorentzVector pi1_truth_cm;
-           toCM(cm_truth, pi1_truth,pi1_truth_cm);
-		   pi1_truth_cm_pt = pi1_truth_cm->Pt();
-		   pi1_truth_cm_eta = pi1_truth_cm->Eta();
-           pi1_truth_cm_ph = mc->Phi();
+		   pi1_truth_z = pi1_truth.E()/(E-e_truth_p);
+		   pi1_truth_p = pi1_truth.P();
+		   pi1_truth_th = pi1_truth.Theta();
+		   pi1_truth_ph = pi1_truth.Phi();
+		   TLorentzVector pi1_truth_cm;
+		   toCM(cm_truth, pi1_truth,pi1_truth_cm);
+		   pi1_truth_cm_pt = pi1_truth_cm.Pt();
+		   pi1_truth_cm_eta = pi1_truth_cm.Eta();
+		   pi1_truth_cm_ph = pi1_truth_cm.Phi();
 		 }
-               if(kbest2 >=0){
-                 double pion_mass = db->GetParticle(211)->Mass();
+		 if(kbest2 >=0){
+		   double pion_mass = db->GetParticle(211)->Mass();
                    pi2_truth_pid = mcparts->getPid(kbest2);
-                 PxPyPzMVector pi2_truth(mcparts->getPx(kbest2),mcparts->getPy(kbest2),mcparts->getPz(kbest2), pion_mass);
-                   pi2_z = pi2_truth->E()/(E-e_truth_p);
-                 pi2_truth_p = pi2_truth->P();
-                 pi2_truth_th = pi2_truth->Theta();
-                 pi2_truth_ph = pi2_truth->Phi();
-                 TLorentzVector pi2_truth_cm;
-                 toCM(cm_truth, pi2_truth,pi1_truth_cm);
-                 pi2_truth_cm_pt = pi2_truth_cm->Pt();
-                 pi2_truth_cm_eta = pi2_truth_cm->Eta();
-                pi2_truth_cm_ph = mc->Phi();
-               }
-           }
-	       if(dipion_tree != NULL)
-               dipion_tree->Fill();
+		   pi2_truth = {mcparts->getPx(kbest2),mcparts->getPy(kbest2),mcparts->getPz(kbest2), 0};
+                   pi2_truth.SetE(hypot(pi2_truth.P(),pion_mass));
+                   pi2_truth_z = pi2_truth.E()/(E-e_truth_p);
+		   pi2_truth_p = pi2_truth.P();
+		   pi2_truth_th = pi2_truth.Theta();
+		   pi2_truth_ph = pi2_truth.Phi();
+		   TLorentzVector pi2_truth_cm;
+		   toCM(cm_truth, pi2_truth, pi2_truth_cm);
+		   pi2_truth_cm_pt = pi2_truth_cm.Pt();
+		   pi2_truth_cm_eta = pi2_truth_cm.Eta();
+		   pi2_truth_cm_ph = pi2_truth_cm.Phi();
+		 }
 	       
+		 if(dipion_tree != NULL){
+		   if(kbest1>=0 && kbest2 >= 0){
+		     diff_phi_cm_truth = angle(pi1_truth_cm_ph-pi2_truth_cm_ph);
+		     diff_eta_cm_truth = pi1_truth_cm_eta-pi2_truth_cm_eta;
+		     pair_mass_truth = (pi1_truth+pi2_truth).M();
+		     mx_epi1pi2x_truth = (beam+target-el-pi1_truth-pi2_truth).M();
+		     mx_epi1x_truth = (beam+target-el-pi1_truth).M();
+		     mx_epi2x_truth = (beam+target-el-pi2_truth).M();
+		   }
+		   dipion_tree->Fill();
+		 }
+	       }
 	     }
 	   }
 	 }
 
-
-       }
+	 }
+       }if(debug) cout << "end electron loop"<<endl;
 
        TLorentzVector mc;
        if(isMC){
@@ -952,7 +1003,7 @@ void SidisTuples(){
 	   for(int j : matchedMCindices){
 	     if(k == j)
 	       alreadymatched=1;
-	     //cout << "skipping matched mc particle" << endl;
+	     //if(debug) cout << "skipping matched mc particle" << endl;
 	   }
 	   if(alreadymatched)
 	     continue;
