@@ -268,19 +268,19 @@ void SidisTuples(){
    tree = dipion_tree;
    leafx(nelectrons);
    leafx(E);leafx(helicity);leafx(e_p);leafx(e_th);leafx(e_ph);leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W);leafx(ntracks);
-   leaf(pi1_p);leaf(pi2_p);leaf(pi1_th);leaf(pi2_th);leaf(pi1_ph);leaf(pi2_ph);
-   leaf(pi1_cm_eta);leaf(pi2_cm_eta);leaf(pi1_cm_pt);leaf(pi2_cm_pt);leaf(pi1_z);leaf(pi2_z);leaf(pi1_pid);leaf(pi2_pid);leaf(pi1_cm_ph);leaf(pi2_cm_ph);
+   leafx(h1_p);leafx(h2_p);leafx(h1_th);leafx(h2_th);leafx(h1_ph);leafx(h2_ph);
+   leafx(h1_cm_eta);leafx(h2_cm_eta);leafx(h1_cm_pt);leafx(h2_cm_pt);leafx(h1_z);leafx(h2_z);leafx(h1_pid);leafx(h2_pid);leafx(h1_cm_ph);leafx(h2_cm_ph);
 
-   leafx(diff_phi_cm);leafx(diff_eta_cm);leafx(pair_mass);leaf(mx_epi1pi2x);leaf(mx_epi1x);leaf(mx_epi2x);
+   leafx(diff_phi_cm);leafx(diff_eta_cm);leafx(pair_mass);leafx(mx_eh1h2x);leafx(mx_eh1x);leafx(mx_eh2x);
    
    if(!isMC) tree = NULL;
    leafx(e_truth_pid);leafx(e_truth_p);leafx(e_truth_th);leafx(e_truth_ph);
    
-   leaf(pi1_truth_pid);leaf(pi1_truth_p);leaf(pi1_truth_th);leaf(pi1_truth_ph);leaf(pi1_truth_z);
-   leaf(pi1_truth_cm_ph);leaf(pi1_truth_cm_eta);leaf(pi1_truth_cm_pt);
-   leaf(pi2_truth_pid);leaf(pi2_truth_p);leaf(pi2_truth_th);leaf(pi2_truth_ph);leaf(pi2_truth_z);
-   leaf(pi2_truth_cm_ph);leaf(pi2_truth_cm_eta);leaf(pi2_truth_cm_pt);
-   leafx(diff_phi_cm_truth);leafx(diff_eta_cm_truth);leafx(pair_mass_truth);leaf(mx_epi1pi2x_truth);leaf(mx_epi1x_truth);leaf(mx_epi2x_truth);
+   leafx(h1_truth_pid);leafx(h1_truth_p);leafx(h1_truth_th);leafx(h1_truth_ph);leafx(h1_truth_z);
+   leafx(h1_truth_cm_ph);leafx(h1_truth_cm_eta);leafx(h1_truth_cm_pt);
+   leafx(h2_truth_pid);leafx(h2_truth_p);leafx(h2_truth_th);leafx(h2_truth_ph);leafx(h2_truth_z);
+   leafx(h2_truth_cm_ph);leafx(h2_truth_cm_eta);leafx(h2_truth_cm_pt);
+   leafx(diff_phi_cm_truth);leafx(diff_eta_cm_truth);leafx(pair_mass_truth);leafx(mx_eh1h2x_truth);leafx(mx_eh1x_truth);leafx(mx_eh2x_truth);
    
    
 
@@ -628,388 +628,312 @@ void SidisTuples(){
 	 if(debug) cout << " check 1"<< endl;
 
 	 
-	 bool found_leader = 0, found_second=0;
+	 bool found_leader = 0;
 	 //loop through all particles, only choosing charged hadrons.
 	 if(hadron_tree != NULL || dihadron_tree != NULL || dipion_tree != NULL){
-	 for(int j =0; j<parts.size();j++){
-	   if(debug) cout << "hadrons loop"<< endl;
-	   auto h = parts[j];
-	   h_pid = h->getPid();
-	   if(h_pid != 211 && h_pid != -211 && h_pid != 2212 && h_pid != -2212 && h_pid != 321 && h_pid != -321)
-	     continue;
-	   h_DC1x=h->traj(DC,DC1)->getX();
-	   h_DC1y=h->traj(DC,DC1)->getY();
-	   h_DC2x=h->traj(DC,DC2)->getX();
-	   h_DC2y=h->traj(DC,DC2)->getY();
-	   h_DC3x=h->traj(DC,DC3)->getX();
-	   h_DC3y=h->traj(DC,DC3)->getY();
-	   
-	   dtime = electrons[i]->getTime()-h->getTime();
-	   
-	   //if(debug) cout << "dc"<<endl;
-	   if(!dcOK(h))
-	     continue;
-
-           //bool dcok = fillHistsDC(pips[j],hpipdc1xy,hpipdc2xy,hpipdc3xy);
-	   //if(!dcok)
-	   //continue;
-	   //if(debug) cout << "pip" << endl;
-	   double mass = db->GetParticle(h_pid)->Mass();
-	   SetLorentzVector(had,h, mass);
-	   double c = 29.9792458; //cm/ns 
-	   dtime_corr =dtime-electrons[i]->getPath()/c+h->getPath()/(had.Beta()*c);
-	   if(abs(dtime_corr) > cut_dtime_corr)
-	     continue;
-	   h_p = had.P();
-	   h_th = had.Theta();
-	   h_eta = had.PseudoRapidity();
-	   h_ph = had.Phi();
-	   
-	   //h_pid = h->par()->getPid();
-	   h_chi2pid = h->par()->getChi2Pid();
-	   //if(debug) cout << "chi2pid" << endl;
-	   if(useCuts && abs(h_chi2pid) > cut_chi2pidmax)
-	     continue;
-	   
-	   dvz = electrons[i]->par()->getVz()-h->par()->getVz();
-	   
-	   if(useCuts && (dvz < cut_dvzmin || dvz > cut_dvzmax))
-	     continue;
-	   
-	   z = had.E()/nu;
-	   
-	   TLorentzVector h_cm;
-	   toCM(cm, had,h_cm);
-	   h_cm_p = h_cm.P();
-	   h_cm_th = h_cm.Theta();
-	   h_cm_eta = h_cm.PseudoRapidity();
-	   h_cm_ph = h_cm.Phi();
-	   h_cm_pt = h_cm.Pt();
-	   //if(debug) cout << h_cm_p << " " << pi_cm_th << " " << pi_cm_ph << endl;
-	   
-	   TLorentzVector h_truth;
-	   if(isMC){
-	     double best_match_diff = 9999;
-	     h_truth_pid = 0;
-	     h_truth_p = 0;
-	     h_truth_th = 0;
-	     h_truth_ph = 0;
-	     h_truth_cm_p = 0;
-	     h_truth_cm_th = 0;
-	     h_truth_cm_eta = 0;
-	     h_truth_cm_ph = 0;
-	     h_truth_cm_pt = 0;
-	     int kbest = -1;
-	     for(int k = 0; k<mcparts->getRows();k++){
-	       //if(debug) cout << "hadron" <<endl;
-	       if(db->GetParticle(h_pid)->Charge() != db->GetParticle(mcparts->getPid(k))->Charge())
+	   for(int j =0; j<parts.size();j++){
+	     if(debug) cout << "hadrons loop"<< endl;
+	     auto h = parts[j];
+	     h_pid = h->getPid();
+	     if(h_pid != 211 && h_pid != -211 && h_pid != 2212 && h_pid != -2212 && h_pid != 321 && h_pid != -321)
 	       continue;
-	       //if(debug) cout << "passed charge" << endl;
-	       TVector3 mc(mcparts->getPx(k),mcparts->getPy(k),mcparts->getPz(k));
-	       if(abs(mc.Theta()-h_th)>1*TMath::Pi()/180){
-		 continue;
-	       }
-	       //if(debug) cout << "passed theta" << endl;
-	       if(abs(angle(mc.Phi()-h_ph))>3*TMath::Pi()/180){
-		 continue;
-	       }
-	       //if(debug) cout << "passed phi" <<endl;
-	       double diff = hypot(angle(mc.Phi()-h_ph)*sin(h_th),mc.Theta()-h_th);
+	     h_DC1x=h->traj(DC,DC1)->getX();
+	     h_DC1y=h->traj(DC,DC1)->getY();
+	     h_DC2x=h->traj(DC,DC2)->getX();
+	     h_DC2y=h->traj(DC,DC2)->getY();
+	     h_DC3x=h->traj(DC,DC3)->getX();
+	     h_DC3y=h->traj(DC,DC3)->getY();
+	     
+	     dtime = electrons[i]->getTime()-h->getTime();
+	     
+	     //if(debug) cout << "dc"<<endl;
+	     if(!dcOK(h))
+	       continue;
+	     
+	     //bool dcok = fillHistsDC(pips[j],hpipdc1xy,hpipdc2xy,hpipdc3xy);
+	     //if(!dcok)
+	     //continue;
+	     //if(debug) cout << "pip" << endl;
+	     double mass = db->GetParticle(h_pid)->Mass();
+	     SetLorentzVector(had,h, mass);
+	     double c = 29.9792458; //cm/ns 
+	     dtime_corr =dtime-electrons[i]->getPath()/c+h->getPath()/(had.Beta()*c);
+	     if(abs(dtime_corr) > cut_dtime_corr)
+	       continue;
+	     h_p = had.P();
+	     h_th = had.Theta();
+	     h_eta = had.PseudoRapidity();
+	     h_ph = had.Phi();
+	     
+	     //h_pid = h->par()->getPid();
+	     h_chi2pid = h->par()->getChi2Pid();
+	     //if(debug) cout << "chi2pid" << endl;
+	     if(useCuts && abs(h_chi2pid) > cut_chi2pidmax)
+	       continue;
+	     
+	     dvz = electrons[i]->par()->getVz()-h->par()->getVz();
+	     
+	     if(useCuts && (dvz < cut_dvzmin || dvz > cut_dvzmax))
+	       continue;
+	     
+	     z = had.E()/nu;
+	     
+	     TLorentzVector h_cm;
+	     toCM(cm, had,h_cm);
+	     h_cm_p = h_cm.P();
+	     h_cm_th = h_cm.Theta();
+	     h_cm_eta = h_cm.PseudoRapidity();
+	     h_cm_ph = h_cm.Phi();
+	     h_cm_pt = h_cm.Pt();
+	     //if(debug) cout << h_cm_p << " " << pi_cm_th << " " << pi_cm_ph << endl;
+	     
+	     TLorentzVector h_truth;
+	     int kbest = -1;
+	     if(isMC){
+	       double best_match_diff = 9999;
+	       h_truth_pid = 0;
+	       h_truth_p = 0;
+	       h_truth_th = 0;
+	       h_truth_ph = 0;
+	       h_truth_cm_p = 0;
+	       h_truth_cm_th = 0;
+	       h_truth_cm_eta = 0;
+	       h_truth_cm_ph = 0;
+	       h_truth_cm_pt = 0;
+	       //int kbest = -1;
+	       for(int k = 0; k<mcparts->getRows();k++){
+		 //if(debug) cout << "hadron" <<endl;
+		 if(db->GetParticle(h_pid)->Charge() != db->GetParticle(mcparts->getPid(k))->Charge())
+		   continue;
+		 //if(debug) cout << "passed charge" << endl;
+		 TVector3 mc(mcparts->getPx(k),mcparts->getPy(k),mcparts->getPz(k));
+		 if(abs(mc.Theta()-h_th)>1*TMath::Pi()/180){
+		   continue;
+		 }
+		 //if(debug) cout << "passed theta" << endl;
+		 if(abs(angle(mc.Phi()-h_ph))>3*TMath::Pi()/180){
+		   continue;
+		 }
+		 //if(debug) cout << "passed phi" <<endl;
+		 double diff = hypot(angle(mc.Phi()-h_ph)*sin(h_th),mc.Theta()-h_th);
 	       //closest match which has negative charge
 	       //if(debug) cout << "diff " << diff << endl;
-	       if(diff < best_match_diff){
-		 kbest = k;
-		 best_match_diff = diff;
-
+		 if(diff < best_match_diff){
+		   kbest = k;
+		   best_match_diff = diff;
+		   
+		 }
 	       }
+	       if(kbest >= 0){
+		 matchedMCindices.push_back(kbest);
+		 TLorentzVector h_truth_cm;
+		 
+		 h_truth.SetXYZM(mcparts->getPx(kbest),mcparts->getPy(kbest),mcparts->getPz(kbest),db->GetParticle(mcparts->getPid(kbest))->Mass());
+		 toCM(cm_truth, h_truth,h_truth_cm);
+		 h_truth_pid = mcparts->getPid(kbest);
+		 h_truth_p = h_truth.P();
+		 h_truth_th = h_truth.Theta();
+		 h_truth_ph = h_truth.Phi();
+		 h_truth_z = h_truth_p/(E-e_truth_p);
+		 
+		 h_truth_cm_p = h_truth_cm.P();
+		 h_truth_cm_th = h_truth_cm.Theta();
+		 h_truth_cm_eta = h_truth_cm.PseudoRapidity();
+		 h_truth_cm_ph = h_truth_cm.Phi();
+		 h_truth_cm_pt = h_truth_cm.Pt();
+	       } 
 	     }
-	     if(kbest >= 0){
-	       matchedMCindices.push_back(kbest);
-	       TLorentzVector h_truth_cm;
+	     if(hadron_tree != NULL){
+	       missing_mass = (beam+target-el-had).M();
+	       hadron_tree->Fill();
+	     }
+	     
+	     
+	     if(debug) cout << "filled hadron tree"<< endl;
+
+	     //leading pion is a high-z pion, and a second hadron of any type
+	     if((z > 0.5 && abs(h_pid)==211 && dihadron_tree!= NULL) || (dipion_tree != NULL && abs(h_pid)==211)){
+	       h1_pid = h_pid;
+	       h1_p = h_p;
+	       h1_th = h_th;
+	       h1_eta = h_eta;
+	       h1_ph = h_ph;
+	       h1_chi2pid = h_chi2pid;
 	       
-	       h_truth.SetXYZM(mcparts->getPx(kbest),mcparts->getPy(kbest),mcparts->getPz(kbest),db->GetParticle(mcparts->getPid(kbest))->Mass());
-	       toCM(cm_truth, h_truth,h_truth_cm);
-	       h_truth_pid = mcparts->getPid(kbest);
-	       h_truth_p = h_truth.P();
-	       h_truth_th = h_truth.Theta();
-	       h_truth_ph = h_truth.Phi();
-	       h_truth_z = h_truth_p/(E-e_truth_p);
+	       h1_cm_p = h_cm_p;
+	       h1_cm_th = h_cm_th;
+	       h1_cm_ph =h_cm_ph;
+	       h1_cm_eta = h_cm_eta;
+	       h1_cm_pt = h_cm_pt;
+	       h1_z = z;
+	       h1 = had;
+	       if(isMC){
+		 h1_truth_pid = h_truth_pid;
+		 h1_truth_p = h_truth_p;
+		 h1_truth_th = h_truth_th;
+		 h1_truth_ph = h_truth_ph;
+		 h1_truth_z = h_truth_z;
+		 
+		 h1_truth_cm_p = h_truth_cm_p;
+		 h1_truth_cm_th = h_truth_cm_th;
+		 h1_truth_cm_eta = h_truth_cm_eta;
+		 h1_truth_cm_ph = h_truth_cm_ph;
+		 h1_truth_cm_pt = h_truth_cm_pt;
+	       }
+	       for(int k = 0; k<parts.size();k++){
+		 if(k == j)
+		   continue;
 
-	       h_truth_cm_p = h_truth_cm.P();
-	       h_truth_cm_th = h_truth_cm.Theta();
-	       h_truth_cm_eta = h_truth_cm.PseudoRapidity();
-	       h_truth_cm_ph = h_truth_cm.Phi();
-	       h_truth_cm_pt = h_truth_cm.Pt();
-	     } 
-	   }
-	   if(hadron_tree != NULL){
-	     missing_mass = (beam+target-el-had).M();
-	     hadron_tree->Fill();
-	   }
-	   
-	   
-	   if(debug) cout << "filled hadron tree"<< endl;
-	   //leading pion is a high-z pion, and a second hadron of any type
-	   if(z > 0.5 && abs(h_pid)==211){
-	     h1_pid = h_pid;
-	     h1_p = h_p;
-	     h1_th = h_th;
-	     h1_eta = h_eta;
-	     h1_ph = h_ph;
-	     h1_chi2pid = h_chi2pid;
-	     
-	     h1_cm_p = h_cm_p;
-	     h1_cm_th = h_cm_th;
-	     h1_cm_ph =h_cm_ph;
-	     h1_cm_eta = h_cm_eta;
-	     h1_cm_pt = h_cm_pt;
-	     h1_z = z;
-	     h1 = had;
-	     found_leader = 1;
-	     if(isMC){
-	       h1_truth_pid = h_truth_pid;
-               h1_truth_p = h_truth_p;
-               h1_truth_th = h_truth_th;
-               h1_truth_ph = h_truth_ph;
-	       h1_truth_z = h_truth_z;
 
-	       h1_truth_cm_p = h_truth_cm_p;
-               h1_truth_cm_th = h_truth_cm_th;
-               h1_truth_cm_eta = h_truth_cm_eta;
-               h1_truth_cm_ph = h_truth_cm_ph;
-               h1_truth_cm_pt = h_truth_cm_pt;
+
+
+
+
+		 if(debug) cout << "check1" << endl;
+		 auto h2 = parts[k];
+		 int pid = h2->getPid();
+		 TLorentzVector had2;
+		 TLorentzVector had2_cm;
+		 if(db->GetParticle(pid) == NULL || db->GetParticle(pid)->Mass()==0)
+		   continue;
+		 SetLorentzVector(had2,h2, db->GetParticle(pid)->Mass());
+		 
+		 toCM(cm, had2,had2_cm);
+		 
+		 h2_z = had2.E()/nu;
+		 h2_p = had2.P();
+		 h2_th = had2.Theta();
+		 h2_ph = had2.Phi();
+		 h2_cm_pt = had2_cm.Pt();
+		 h2_cm_ph = had2_cm.Phi();
+		 h2_cm_eta = had2_cm.Eta();
+		 h2_pid = pid;
+		 diff_phi_cm = angle(h1_cm_ph-h2_cm_ph);
+		 diff_eta_cm = h1_cm_eta-h2_cm_eta;
+		 pair_mass = (had2+had).M();
+		 mx_eh1h2x = (beam+target-el-had-had2).M();
+		 mx_eh1x = (beam+target-el-had).M();
+		 mx_eh2x = (beam+target-el-had2).M();
+
+		 dtime = electrons[i]->getTime()-h2->getTime();
+		 if(h2_pid != 211 && h2_pid != -211 && h2_pid != 2212 && h2_pid != -2212 && h2_pid != 321 && h2_pid != -321)
+		      continue;
+                 if(!dcOK(h2))
+                   continue;
+                 double mass = db->GetParticle(h2_pid)->Mass();
+                 SetLorentzVector(had2,h2, mass);
+                 double c = 29.9792458; //cm/ns
+                 dtime_corr =dtime-electrons[i]->getPath()/c+h2->getPath()/(had2.Beta()*c);
+                 if(abs(dtime_corr) > cut_dtime_corr)
+                   continue;
+                 h2_chi2pid = h2->par()->getChi2Pid();
+                 if(useCuts && abs(h2_chi2pid) > cut_chi2pidmax)
+                   continue;
+
+                 dvz = electrons[i]->par()->getVz()-h2->par()->getVz();
+
+                 if(useCuts && (dvz < cut_dvzmin || dvz > cut_dvzmax))
+                   continue;
+
+		 // if only the dipion tree is being filled, and the second hadron is not a pion, skip this hadron
+		 if(dihadron_tree == NULL && dipion_tree != NULL && abs(h2_pid) != 211)
+		   continue;
+
+		 if(isMC){
+		   h2_truth_z=0;
+		   h2_truth_pid=0;
+		   h2_truth_p=0;
+		   h2_truth_th=0;
+		   h2_truth_ph=0;
+		   h2_truth_cm_pt=0;
+		   h2_truth_cm_ph=0;
+		   h2_truth_cm_eta=0;
+		   
+		   //double h1_p = had.P();
+		   double h2_th = had2.Theta();
+		   double h2_ph = had2.Phi();
+		   double best_match_diff = 9999;
+		   int kbest2 = -1;
+		   
+		   for(int kk = 0; kk<mcparts->getRows();kk++){
+		     if(kk == kbest)
+		       continue;
+		     //if(debug) cout << "hadron" <<endl;                                                                                                                                        
+		     TVector3 mc(mcparts->getPx(kk),mcparts->getPy(kk),mcparts->getPz(kk));
+		     if(abs(mc.Theta()-h_th)>1*TMath::Pi()/180){
+		       continue;
+		     }
+		     if(abs(angle(mc.Phi()-h_ph))>3*TMath::Pi()/180){
+		       continue;
+		     }
+		     //if(debug) cout << "passed phi" <<endl;                                                                                                                                    
+		     double diff = hypot(angle(mc.Phi()-h2_ph)*sin(h2_th),mc.Theta()-h2_th);
+		     //closest match which has negative charge                                                                                                                                   
+		     //if(debug) cout << "diff " << diff << endl;                                                                                                                                
+		     if(diff < best_match_diff){
+		       kbest2 = kk;
+		       best_match_diff = diff;
+		     }
+		   }
+		   TLorentzVector h1_truth = h_truth;
+		   TLorentzVector h2_truth;
+		   
+		   if(kbest2 >=0){
+		     h2_truth_pid = mcparts->getPid(kbest2);
+		     double mass = db->GetParticle(h2_truth_pid)->Mass();
+		     h2_truth = {mcparts->getPx(kbest2),mcparts->getPy(kbest2),mcparts->getPz(kbest2), 0};
+		     h2_truth.SetE(hypot(h2_truth.P(),mass));
+		     h2_truth_z = h2_truth.E()/(E-e_truth_p);
+		     h2_truth_p = h2_truth.P();
+		     h2_truth_th = h2_truth.Theta();
+		     h2_truth_ph = h2_truth.Phi();
+		     TLorentzVector h2_truth_cm;
+		     toCM(cm_truth, h2_truth,h2_truth_cm);
+		     h2_truth_cm_pt = h2_truth_cm.Pt();
+		     h2_truth_cm_eta = h2_truth_cm.Eta();
+		     h2_truth_cm_ph = h2_truth_cm.Phi();
+		   }
+		   if(isMC){
+		     diff_phi_cm_truth = h2_truth_cm_ph-h1_truth_cm_ph;
+		     diff_eta_cm_truth = h2_truth_cm_eta-h1_truth_cm_eta;
+		   }
+		 }
+		 if(dihadron_tree!= NULL && h1_z>0.5)
+		   dihadron_tree->Fill();
+		 if(dipion_tree != NULL && abs(h2_pid)==211)
+		   dipion_tree->Fill();
+	       }
+
 	     }
-	   } 
-	   else {
-	     h2_pid = h_pid;
-	     h2_p = h_p;
-	     h2_th = h_th;
-	     h2_eta = h_eta;
-	     h2_ph = h_ph;
-	     h2_chi2pid = h_chi2pid;
-	     h2_truth_z = h_truth_z;
-
-	     h2_cm_p = h_cm_p;
-	     h2_cm_th =h_cm_th;
-	     h2_cm_ph =h_cm_ph;
-	     h2_cm_eta = h_cm_eta;
-	     h2_cm_pt = h_cm_pt;
-	     h2_z = z;
-	     h2 =had;
-	     found_second = 1;
-	     if(isMC){
-               h2_truth_pid = h_truth_pid;
-               h2_truth_p = h_truth_p;
-               h2_truth_th = h_truth_th;
-               h2_truth_ph = h_truth_ph;
-
-               h2_truth_cm_p = h_truth_cm_p;
-               h2_truth_cm_th = h_truth_cm_th;
-               h2_truth_cm_eta = h_truth_cm_eta;
-               h2_truth_cm_ph = h_truth_cm_ph;
-               h2_truth_cm_pt = h_truth_cm_pt;
-             }
-	   }
-	   if(found_leader && found_second){
-	     //if(debug) cout << "masses "  << p1.M() << "  " << p2.M() <<endl;
-	     pair_mass = (h1+h2).M();
-	     mx_eh1h2x = (beam+target-el-h1-h2).M();
-	     mx_eh1x = (beam+target-el-h1).M();
-	     mx_eh2x = (beam+target-el-h2).M();
-	     diff_eta = h1_eta-h2_eta;
-	     double PI = TMath::Pi();
-	     diff_phi = h1_ph-h2_ph;
-	     if(diff_phi<-PI)
-	       diff_phi+=2*PI;
-	     if(diff_phi>PI)
-	       diff_phi-=2*PI;
 	     
-	     diff_phi_cm = h2_cm_ph-h1_cm_ph;
-	     if(diff_phi_cm<-PI)
-	       diff_phi_cm+=2*PI;
-	     if(diff_phi_cm>PI)
-	       diff_phi_cm-=2*PI;
-	     diff_eta_cm = h2_cm_eta-h1_cm_eta;
-	     if(isMC){
-	       diff_phi_cm_truth = h2_truth_cm_ph-h1_truth_cm_ph;
-	       diff_eta_cm_truth = h2_truth_cm_eta-h1_truth_cm_eta;
-	     }
-	     
-	     if(dihadron_tree != NULL)
-	       dihadron_tree->Fill();
-	   } 
-	   
-	   if(h_pid == 211)
-	     npip++;
-	   else if(h_pid == -211)
-	     npim++;
-	   else if(h_pid == 2212)
-             npp++;
-	   else if(h_pid == -2212)
-             npm++;
-	   else if(h_pid == 321)
-             nKp++;
-           else if(h_pid == -321)
+	     if(h_pid == 211)
+	       npip++;
+	     else if(h_pid == -211)
+	       npim++;
+	     else if(h_pid == 2212)
+	       npp++;
+	     else if(h_pid == -2212)
+	       npm++;
+	     else if(h_pid == 321)
+	       nKp++;
+	     else if(h_pid == -321)
              nKm++;
-	   nh++;
-	   z_tot+=z;
+	     nh++;
+	     z_tot+=z;
+	   }
+	 
+	 
 	 }
 	 if(electron_tree != NULL)
-	   electron_tree->Fill();
-	 electrons_passCuts++;
-
-	 //dipion tree
-	 if(debug) cout << "checking for dipions" << endl;
-	 if(abs(h_pid) == 211 && createDipionTree){
-	   for(int k = 0; k<parts.size();k++){
-	     if(debug) cout << "check1" << endl;
-	     auto h2 = parts[k];
-	     int pid = h2->getPid();
-	     TLorentzVector had2;
-	     TLorentzVector had2_cm;
-	     SetLorentzVector(had2,h2, db->GetParticle(211)->Mass());
-	     if(abs(pid) == 211 && had2.E()/nu < z){
-	       pi1_z = z;
-	       pi1_p = had.P();
-	       pi1_th = had.Theta();
-	       pi1_ph = had.Phi();
-	       toCM(cm, had2,had2_cm);
-	       pi1_cm_pt = h_cm_pt;
-	       pi1_cm_ph = h_cm_ph;
-	       pi1_cm_eta = h_cm_eta;
-	       pi1_pid = h_pid;
-	       
-	       pi2_z = had2.E()/nu;
-	       pi2_p = had2.P();
-	       pi2_th = had2.Theta();
-	       pi2_ph = had2.Phi();
-	       pi2_cm_pt = had2_cm.Pt();
-	       pi2_cm_ph = had2_cm.Phi();
-	       pi2_cm_eta = had2_cm.Eta();
-	       pi2_pid = pid;
-	       diff_phi_cm = angle(pi1_cm_ph-pi2_cm_ph);
-	       diff_eta_cm = pi1_cm_eta-pi2_cm_eta;
-	       pair_mass = (had2+had).M();
-	       mx_epi1pi2x = (beam+target-el-had-had2).M();
-	       mx_epi1x = (beam+target-el-had).M();
-	       mx_epi2x = (beam+target-el-had2).M();
-	       if(isMC){
-		 pi1_truth_z=0;
-		 pi1_truth_pid=0;
-		 pi1_truth_p=0;
-		 pi1_truth_th=0;
-		 pi1_truth_ph=0;
-		 pi1_truth_cm_pt=0;
-		 pi1_truth_cm_ph=0;
-		 pi1_truth_cm_eta=0;
-
-		 pi2_truth_z=0;
-                 pi2_truth_pid=0;
-                 pi2_truth_p=0;
-                 pi2_truth_th=0;
-                 pi2_truth_ph=0;
-                 pi2_truth_cm_pt=0;
-                 pi2_truth_cm_ph=0;
-                 pi2_truth_cm_eta=0;
-
-		 double p1_p = had.P();
-		 double pi2_th = had2.Theta();
-		 double pi2_ph = had2.Phi();
-		 double best_match_diff = 9999;
-		 int kbest1 = -1;
-		 int kbest2 = -1;
-		 for(int k = 0; k<mcparts->getRows();k++){
-		     //if(debug) cout << "hadron" <<endl;
-		   TVector3 mc(mcparts->getPx(k),mcparts->getPy(k),mcparts->getPz(k));
-		   if(abs(mc.Theta()-pi2_th)>1*TMath::Pi()/180){
-		     continue;
-		   }
-		   if(abs(angle(mc.Phi()-pi2_ph))>3*TMath::Pi()/180){
-		     continue;
-		   }
-		   //if(debug) cout << "passed phi" <<endl;                                   
-		   double diff = hypot(angle(mc.Phi()-pi2_ph)*sin(pi2_th),mc.Theta()-pi2_th);
-		   //closest match which has negative charge                        
-		   //if(debug) cout << "diff " << diff << endl;                               
-		   if(diff < best_match_diff){
-		     kbest1 = k;
-		     best_match_diff = diff;
-		   }
-		 }
-		 if(debug) cout << "loop on mc" << endl;
-		 best_match_diff = 9999;
-		 for(int k = 0; k<mcparts->getRows();k++){
-		   if(k == kbest1)
-		     continue;
-		   //if(debug) cout << "hadron" <<endl;                                                                  
-                   TVector3 mc(mcparts->getPx(k),mcparts->getPy(k),mcparts->getPz(k));
-                   if(abs(mc.Theta()-h_th)>1*TMath::Pi()/180){
-                     continue;
-                   }
-                   if(abs(angle(mc.Phi()-h_ph))>3*TMath::Pi()/180){
-                     continue;
-                   }
-                   //if(debug) cout << "passed phi" <<endl;                                                                
-                   double diff = hypot(angle(mc.Phi()-pi2_ph)*sin(pi2_th),mc.Theta()-pi2_th);
-                   //closest match which has negative charge                                                     
-                   //if(debug) cout << "diff " << diff << endl;                                                            
-                   if(diff < best_match_diff){
-                     kbest2 = k;
-                     best_match_diff = diff;
-                   }
-                 }
-		 TLorentzVector pi1_truth, pi2_truth;
-
-		 if(kbest1 >=0){
-		   double pion_mass = db->GetParticle(211)->Mass();
-		   pi1_truth = {mcparts->getPx(kbest1),mcparts->getPy(kbest1),mcparts->getPz(kbest1), 0};
-		   pi1_truth.SetE(hypot(pi1_truth.P(),pion_mass));
-		   pi1_truth_pid = mcparts->getPid(kbest1);
-		   pi1_truth_z = pi1_truth.E()/(E-e_truth_p);
-		   pi1_truth_p = pi1_truth.P();
-		   pi1_truth_th = pi1_truth.Theta();
-		   pi1_truth_ph = pi1_truth.Phi();
-		   TLorentzVector pi1_truth_cm;
-		   toCM(cm_truth, pi1_truth,pi1_truth_cm);
-		   pi1_truth_cm_pt = pi1_truth_cm.Pt();
-		   pi1_truth_cm_eta = pi1_truth_cm.Eta();
-		   pi1_truth_cm_ph = pi1_truth_cm.Phi();
-		 }
-		 if(kbest2 >=0){
-		   double pion_mass = db->GetParticle(211)->Mass();
-                   pi2_truth_pid = mcparts->getPid(kbest2);
-		   pi2_truth = {mcparts->getPx(kbest2),mcparts->getPy(kbest2),mcparts->getPz(kbest2), 0};
-                   pi2_truth.SetE(hypot(pi2_truth.P(),pion_mass));
-                   pi2_truth_z = pi2_truth.E()/(E-e_truth_p);
-		   pi2_truth_p = pi2_truth.P();
-		   pi2_truth_th = pi2_truth.Theta();
-		   pi2_truth_ph = pi2_truth.Phi();
-		   TLorentzVector pi2_truth_cm;
-		   toCM(cm_truth, pi2_truth, pi2_truth_cm);
-		   pi2_truth_cm_pt = pi2_truth_cm.Pt();
-		   pi2_truth_cm_eta = pi2_truth_cm.Eta();
-		   pi2_truth_cm_ph = pi2_truth_cm.Phi();
-		 }
-	       
-		 if(dipion_tree != NULL){
-		   if(kbest1>=0 && kbest2 >= 0){
-		     diff_phi_cm_truth = angle(pi1_truth_cm_ph-pi2_truth_cm_ph);
-		     diff_eta_cm_truth = pi1_truth_cm_eta-pi2_truth_cm_eta;
-		     pair_mass_truth = (pi1_truth+pi2_truth).M();
-		     mx_epi1pi2x_truth = (beam+target-el-pi1_truth-pi2_truth).M();
-		     mx_epi1x_truth = (beam+target-el-pi1_truth).M();
-		     mx_epi2x_truth = (beam+target-el-pi2_truth).M();
-		   }
-		   dipion_tree->Fill();
-		 }
-	       }
-	     }
-	   }
-	 }
-
-	 }
-       }if(debug) cout << "end electron loop"<<endl;
-
+           electron_tree->Fill();
+         electrons_passCuts++;
+	   
+	   
+       }
+       if(debug) cout << "end electron loop"<<endl;
+     
+       if(electron_tree != NULL)
+	 electron_tree->Fill();
        TLorentzVector mc;
        if(isMC){
 	 for(int k = 0; k<mcparts->getRows();k++){
@@ -1024,7 +948,7 @@ void SidisTuples(){
 	   int pid = mcparts->getPid(k);
 	   mc.SetXYZM(mcparts->getPx(k),mcparts->getPy(k),mcparts->getPz(k),db->GetParticle(pid)->Mass());
 	   if(abs(pid) == 211 || abs(pid) == 321 || abs(pid) == 2212){
-
+	     
 	     // only store unmatched generated hadrons in events where
 	     // the electron is reconstructed
 	     if(e_p == defval)
@@ -1056,7 +980,7 @@ void SidisTuples(){
        }
        
      } 
-      
+     
    }
    gBenchmark->Stop("timer");
    gBenchmark->Print("timer");
