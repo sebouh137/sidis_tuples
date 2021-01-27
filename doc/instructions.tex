@@ -94,12 +94,85 @@ Example:\\
 This creates opens the file \code{/work/clas12/rg-a/montecarlo/fall2018/torus-1/clasdis/nobg/DIS\_pass1\_997\_1002.hipo}, and outputs a file \code{mc\_electrons.root}.  The \code{-{}-isMC} flag tells the program that the input file is from a Monte-Carlo simulation.  The optional \code{-{}-skipEvents} and \code{-{}-N} arguments tells the program to skip the first 600k events, and then processes the next 300k events.  The output contains only the electrons tuple, as specified by the \code{-{}-includeElectrons} flag.  The hadrons, dihadrons and dipions tuples can be created by using the \code{-{}-includeHadrons}, \code{-{}-includeDihadrons}, and \code{-{}-includeDipions} flags respectively.  If no flag for including a tuple in the output is provided, then the program will terminate without processing any data.  
  
 
-\section{Trees generated}
+\section{Tuples generated}
+The following subsections detail the tuples that are generated
+\subsection{electrons tuple}
+This tuple contains all electrons that pass fiducial, PID, and DIS kinematics cuts listed below.  There may be multiple entries per event if there are multiple DIS electrons in the event.
+Kinematic cuts:
 \begin{itemize}
-\item[electrons] all electrons that pass fiducial, PID, and DIS cuts.  There may be multiple entries per event if there are multiple DIS electrons in the event.
-\item[hadrons] DIS electron + hadron.  There may be multiple entries per event if there are multiple hadrons in the event.  
-\item[dihadrons] DIS electron + leading pion + another hadron (which may or may not be a pion)
-\item[dipions] DIS electron + pion + second pion.  Neither pion is required to be leading.  
+\item $Q^2>1$ GeV$^2/c^2$
+\item $W>2$ GeV$/c^2$
+\item $y<0.85$
 \end{itemize}
+Drift-chamber fiducial cuts (on position in regions 1 and 3):
+\begin{itemize}
+\item at least 8 mm from inter-sector plane
+\item Also cut out a hexagon at center with inner radius 20 mm
+\end{itemize}
+PCAL fiducial cuts
+\begin{itemize}
+\item at least 25 mm from inter-sector plane.
+\end{itemize}
+Event-quality cuts:
+\begin{itemize}
+\item Energy fraction in Ecal $>$ 0.17
+\item pcal energy $>$ 0.07 GeV
+\item vertex position $-8 < v_z < 1$ mm
+\end{itemize}
+List of variables:
+\begin{itemize}
+\item \code{E}:  beam energy in GeV
+\item \code{e\_p}:  momentum of electron [GeV]
+\item \code{e\_th}:  polar angle (theta) of electron [rad]
+\item \code{e\_ph}:  azimuthal angle (phi) of electron [rad]
+\item \code{Q2}:  momentum transfer $Q^2$ [GeV$^2$]
+\item \code{W}:  invariant mass of the target proton + virtual photon system [GeV]
+\item \code{nu}:  energy loss of electron, $\nu \equiv E-E'$ [GeV]
+\item \code{x}:  Bj\" orken $x\equiv Q^2/(2m_p \nu)$)
+\item \code{y}:  fractional energy loss, $y\equiv\nu/E$
+\end{itemize}
+
+\subsection{hadrons tuple} 
+This tuple contains all charged hadrons that pass fiducial and PID cuts, and are accompanied by an electron that passes the cuts in the electron tuple.  There may be multiple entries per event if there are multiple hadrons associated with an electron.  
+Cuts:
+\begin{itemize}
+\item |vertex position difference from electron| $<5$ mm
+\item |corrected time difference from electron| $<0.3$ ns
+\item goodness of pid (chi2pid) $<$ 2.5
+
+\end{itemize}
+List of variables:
+\begin{itemize}
+\item \code{z}:  energy of hadron divided by $\nu$
+\item \code{h\_pid}:  particle identification number of hadron \cite{pdgcodes}
+\item \code{h\_chi2pid}:  goodness of particle identification
+\item \code{h\_p} momentum of hadron in lab frame [GeV]
+\item \code{h\_th} polar angle (theta) of hadron in lab frame [rad]
+\item \code{h\_ph} azimuthal angle (phi) of hadron in lab frame [rad]
+\item \code{h\_cm\_pt} transverse momentum of hadron in CM frame [GeV]
+\item \code{h\_cm\_eta} pseudorapidity of hadron in CM frame [dimensionless]
+\item \code{h\_cm\_ph} azimuthal angle (phi) of hadron in CM frame [rad]
+\item \code{h\_cm\_p}  momentum of hadron in CM frame [GeV]
+\item \code{h\_cm\_th} azimuthal angle (theta) of hadron in CM frame [rad]
+\item \code{missing\_mass} missing mass (beam + target $-$ electron $-$ hadron)
+\item variables with \code{h\_truth\_} prefix: truth variables in MC simulations (MC only).  
+\end{itemize}
+
+
+\subsection{dihadrons tuple} 
+This tuple requires a DIS electron, and two charged hadrons (one of which is a leading pion ($z>0.5$)).  The requirements for the electron and the hadrons are the same as those of the electrons and hadrons tuples.
+
+\begin{itemize}
+\item Variables with the \code{h1\_} prefix correspond to the leading pion in the dihadron pair.  Variables with the \code{h2\_} prefix correspond to those of the other hadron in the pair
+\item \code{mx\_eh1h2x} missing mass (beam + target $-$ electron $-$ hadron1 $-$ hadron2)
+\item \code{mx\_eh1x} missing mass (beam + target $-$ electron $-$ hadron1)
+\item \code{mx\_eh2x} missing mass (beam + target $-$ electron $-$ hadron2)
+\item \code{pair\_mass} invariant mass of the pair (hadron1 $-$ hadron2)
+\item \code{diff\_phi\_cm} difference in azimuthal angle between hadrons in the CM frame [rad]
+\item \code{diff\_phi\_cm} difference in pseudorapiditiy between hadrons in the CM frame.
+\end{itemize}
+
+\subsection{dipions tuple}
+Similar to the dihadrons tuple, this requires a DIS electron and two charged hadrons.  This tuple requires that both hadrons be pions, however there is no cut on $z$ for either hadron unlike the dihadrons tuple. 
 
 \end{document}
