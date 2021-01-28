@@ -122,6 +122,7 @@ void SidisTuples(){
    bool createElectronTree = 0;
    bool createDihadronTree = 0;
    bool createHadronTree = 0;
+   TString qadbPath="";
    for(Int_t ii=1;ii<gApplication->Argc();ii++){
     TString opt=gApplication->Argv(ii);
     if((opt.Contains("--in="))){
@@ -169,6 +170,9 @@ void SidisTuples(){
       cout << "create electron tree" <<endl;
     } else if (opt.Contains("--debug")){
       debug=1;
+    } else if (opt.Contains("--qadbPath=")){
+      qadbPath=opt(11,opt.Sizeof());
+      cout << "qadb path: "<< qadbPath <<endl;
     }
 
    }
@@ -181,6 +185,11 @@ void SidisTuples(){
    clas12::clas12databases *dbc12;
    if(!isMC){
      clas12::clas12databases::SetRCDBRemoteConnection();
+     if(!qadbPath.EqualTo("")){
+       cout << "setting qadb connection" <<endl;
+       clas12::clas12databases::SetQADBConnection((const std::string)qadbPath);
+       cout << "successfully connected to qadb" <<endl;
+     }
      dbc12 = new clas12::clas12databases();
    }
    //macro for declaring a variable and adding it to the current tree
@@ -325,10 +334,16 @@ void SidisTuples(){
    for(Int_t filenum=0;filenum<files->GetEntries();filenum++){
      //create the event reader
      clas12reader c12(files->At(filenum)->GetTitle(),{0});
+     
+     
      if(!isMC){
+       
 
        c12.connectDataBases(dbc12);
-       
+       if(!qadbPath.EqualTo("")){
+	 c12.db().qadb_requireGolden(true); 
+	 c12.applyQA();
+       }
        clas12::rcdb_reader *rcdb = c12.rcdb();
        auto& current = rcdb->current();
        E = current.beam_energy/1000;
