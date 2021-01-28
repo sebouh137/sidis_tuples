@@ -226,7 +226,7 @@ void SidisTuples(){
    // don't add these variables to the tree unless running MC 
    if(!isMC)
      tree = NULL;
-   leaf(e_truth_pid);leaf(e_truth_p);leaf(e_truth_th);leaf(e_truth_ph);leaf(e_truth_px);leaf(e_truth_py);leaf(e_truth_pz);leaf(e_truth_vx);leaf(e_truth_vy); leaf(e_truth_vz);
+   leaf(e_truth_pid);leaf(e_truth_p);leaf(e_truth_th);leaf(e_truth_ph);leaf(e_truth_px);leaf(e_truth_py);leaf(e_truth_pz);leaf(e_truth_vx);leaf(e_truth_vy); leaf(e_truth_vz);leaf(nhtracks_truth);
    
 
    //cout << "made leaves" <<endl;
@@ -242,7 +242,7 @@ void SidisTuples(){
    
    if(!isMC) tree = NULL;
    leafx(e_truth_pid);leafx(e_truth_p);leafx(e_truth_th);leafx(e_truth_ph);leafx(e_truth_px);leafx(e_truth_py);leafx(e_truth_pz);
-   leaf(h_truth_pid);leaf(h_truth_p);leaf(h_truth_th);leaf(h_truth_ph);leaf(h_truth_px);leaf(h_truth_py);leaf(h_truth_pz);leaf(h_truth_cm_p);leaf(h_truth_cm_th);leaf(h_truth_cm_ph);leaf(h_truth_cm_eta);leaf(h_truth_cm_rap);leaf(h_truth_cm_pt);leaf(h_truth_z);leaf(missing_mass_truth);
+   leaf(h_truth_pid);leaf(h_truth_p);leaf(h_truth_th);leaf(h_truth_ph);leaf(h_truth_px);leaf(h_truth_py);leaf(h_truth_pz);leaf(h_truth_cm_p);leaf(h_truth_cm_th);leaf(h_truth_cm_ph);leaf(h_truth_cm_eta);leaf(h_truth_cm_rap);leaf(h_truth_cm_pt);leaf(h_truth_z);leaf(missing_mass_truth);leafx(nhtracks_truth);
    
 
    TTree* dihadron_tree = createDihadronTree ? new TTree("dihadrons","dihadrons") : NULL;
@@ -271,7 +271,7 @@ void SidisTuples(){
    leaf(h1_truth_cm_th);leaf(h1_truth_cm_ph);leaf(h1_truth_cm_eta);leaf(h1_truth_cm_rap);leaf(h1_truth_cm_pt);
    leaf(h2_truth_pid);leaf(h2_truth_p);leaf(h2_truth_th);leaf(h2_truth_ph);leaf(h2_truth_px);leaf(h2_truth_py);leaf(h2_truth_pz);leaf(h2_truth_cm_p);leaf(h2_truth_z);
    leaf(h2_truth_cm_th);leaf(h2_truth_cm_ph);leaf(h2_truth_cm_eta);leaf(h2_truth_cm_rap);leaf(h2_truth_cm_pt);
-   leaf(diff_phi_cm_truth);leaf(diff_eta_cm_truth);leaf(diff_rap_cm_truth);leaf(pair_mass_truth);leaf(mx_eh1h2x_truth);leaf(mx_eh1x_truth);leaf(mx_eh2x_truth);
+   leaf(diff_phi_cm_truth);leaf(diff_eta_cm_truth);leaf(diff_rap_cm_truth);leaf(pair_mass_truth);leaf(mx_eh1h2x_truth);leaf(mx_eh1x_truth);leaf(mx_eh2x_truth);leafx(nhtracks_truth);
    
 
    // A small tree for storing dipion events, without requiring one of them to be leading
@@ -482,7 +482,19 @@ void SidisTuples(){
        mcpar_ptr mcparts;
        if(isMC){
 	 mcparts = c12.mcparts();
+	 nhtracks_truth =0;
+	 //skip the first two entries; these are the initial state particles
+	 //the intermediate state particles are removed by the pid cuts
+	 for(int kk = 2; kk<mcparts->getRows();kk++){
+	   int pid = mcparts->getPid(kk);
+	   if(debug) cout << pid << " ";
+	   if(abs(pid)==211 || abs(pid) == 321 || abs(pid)==2212)
+	     nhtracks_truth++;
+	 }
+	 if(debug) cout << endl;
        }
+       
+
        auto parts=c12.getDetParticles(); 
        /*if(electrons.size() == 2){
 	 if(debug) cout << "electrons" << endl;
