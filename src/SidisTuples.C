@@ -210,6 +210,7 @@ void SidisTuples(){
    leaf(nKp);leaf(nKm);
    leaf(nh);
    leaf(ntracks);
+   leaf(nhtracks);
    leaf(z_tot);
 
    
@@ -226,7 +227,7 @@ void SidisTuples(){
    tree = hadron_tree;
    leafx(nelectrons);
    leafx(E);leafx(helicity);leafx(e_p);leafx(e_th);leafx(e_ph);leafx(e_px);leafx(e_py);leafx(e_pz);
-leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W);leafx(ntracks);
+   leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W);leafx(ntracks);leafx(nhtracks);
  leaf(h_chi2pid);leaf(h_pid);leaf(h_p);leaf(h_th);leaf(h_ph);leaf(h_px);leaf(h_py);leaf(h_pz);leaf(h_DC1x);leaf(h_DC1y);leaf(h_DC2x);leaf(h_DC2y);leaf(h_DC3x);leaf(h_DC3y);leaf(dvz);leaf(z); leaf(h_cm_p);leaf(h_cm_th);leaf(h_cm_ph);leaf(h_cm_eta);leaf(h_cm_rap);leaf(h_cm_pt); leaf(h_eta); leaf(dtime); leaf(dtime_corr); leaf(missing_mass);
 
    
@@ -237,7 +238,7 @@ leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W);leafx(ntracks);
 
    TTree* dihadron_tree = createDihadronTree ? new TTree("dihadrons","dihadrons") : NULL;
    tree = dihadron_tree;   
-   leafx(E);leafx(helicity);leafx(e_p);leafx(e_th);leafx(e_ph);leafx(e_px);leafx(e_py);leafx(e_pz);leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W); leafx(ntracks); leaf(diff_phi_cm_mix);leaf(diff_eta_cm_mix);leaf(diff_rap_cm_mix);
+   leafx(E);leafx(helicity);leafx(e_p);leafx(e_th);leafx(e_ph);leafx(e_px);leafx(e_py);leafx(e_pz);leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W); leafx(ntracks); leafx(nhtracks); leaf(diff_phi_cm_mix);leaf(diff_eta_cm_mix);leaf(diff_rap_cm_mix);
    
 
    // macro creates fields for two hadrons
@@ -270,7 +271,7 @@ leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W);leafx(ntracks);
    TTree* dipion_tree = createDipionTree ? new TTree("dipions","dipions") : NULL;
    tree = dipion_tree;
    leafx(nelectrons);
-   leafx(E);leafx(helicity);leafx(e_p);leafx(e_th);leafx(e_ph);leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W);leafx(ntracks);
+   leafx(E);leafx(helicity);leafx(e_p);leafx(e_th);leafx(e_ph);leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W);leafx(ntracks);leafx(nhtracks);
    leafx(h1_p);leafx(h2_p);leafx(h1_th);leafx(h2_th);leafx(h1_ph);leafx(h2_ph);
    leafx(h1_cm_eta);leafx(h2_cm_eta);leafx(h1_cm_rap);leafx(h2_cm_rap);leafx(h1_cm_pt);leafx(h2_cm_pt);leafx(h1_z);leafx(h2_z);leafx(h1_pid);leafx(h2_pid);leafx(h1_cm_ph);leafx(h2_cm_ph);
 
@@ -553,6 +554,7 @@ leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W);leafx(ntracks);
 	 
 	 auto parts=c12.getDetParticles();
 	 ntracks=0;
+	 nhtracks=0;
 	 if(debug) cout << "counting tracks"<<endl;
 	 for(int kk = 0; kk<parts.size();kk++){
 	   auto part = parts[kk];
@@ -571,8 +573,8 @@ leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W);leafx(ntracks);
 	   if(dvz < cut_dvzmin || dvz > cut_dvzmax)
 	     continue;
 	   ntracks++;
-	   
-	   
+	   if(abs(pid)==211 || abs(pid)==321 || abs(pid) == 2212)
+	     nhtracks++;
 	 }
 	 if(debug) cout << ntracks << " tracks" << endl;
 	 //if(debug) cout << "parts" << endl;
