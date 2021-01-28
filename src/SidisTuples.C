@@ -196,6 +196,9 @@ void SidisTuples(){
    leaf(e_p);
    leaf(e_th);
    leaf(e_ph);
+   leaf(e_px);
+   leaf(e_py);
+   leaf(e_pz);
    leaf(nelectrons);
    leaf(nu);leaf(Q2);leaf(x);leaf(y);leaf(W);
    leaf(e_DC1x);leaf(e_DC2x);leaf(e_DC3x);leaf(e_DC1y);leaf(e_DC2y);leaf(e_DC3y);
@@ -213,7 +216,7 @@ void SidisTuples(){
    // don't add these variables to the tree unless running MC 
    if(!isMC)
      tree = NULL;
-   leaf(e_truth_pid);leaf(e_truth_p);leaf(e_truth_th);leaf(e_truth_ph);leaf(e_truth_vx);leaf(e_truth_vy); leaf(e_truth_vz);
+   leaf(e_truth_pid);leaf(e_truth_p);leaf(e_truth_th);leaf(e_truth_ph);leaf(e_truth_px);leaf(e_truth_py);leaf(e_truth_pz);leaf(e_truth_vx);leaf(e_truth_vy); leaf(e_truth_vz);
    
 
    //cout << "made leaves" <<endl;
@@ -222,43 +225,43 @@ void SidisTuples(){
    TTree* hadron_tree = createHadronTree ? new TTree("hadrons","hadrons") : NULL;
    tree = hadron_tree;
    leafx(nelectrons);
-   leafx(E);leafx(helicity);leafx(e_p);leafx(e_th);leafx(e_ph);leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W);leafx(ntracks);
-   leaf(h_chi2pid);leaf(h_pid);leaf(h_p);leaf(h_th);leaf(h_ph);leaf(h_DC1x);leaf(h_DC1y);leaf(h_DC2x);leaf(h_DC2y);leaf(h_DC3x);leaf(h_DC3y);leaf(dvz);leaf(z); leaf(h_cm_p);leaf(h_cm_th);leaf(h_cm_ph);leaf(h_cm_eta);leaf(h_cm_pt);
-   leaf(h_eta); leaf(dtime); leaf(dtime_corr); leaf(missing_mass);
+   leafx(E);leafx(helicity);leafx(e_p);leafx(e_th);leafx(e_ph);leafx(e_px);leafx(e_py);leafx(e_pz);
+leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W);leafx(ntracks);
+ leaf(h_chi2pid);leaf(h_pid);leaf(h_p);leaf(h_th);leaf(h_ph);leaf(h_px);leaf(h_py);leaf(h_pz);leaf(h_DC1x);leaf(h_DC1y);leaf(h_DC2x);leaf(h_DC2y);leaf(h_DC3x);leaf(h_DC3y);leaf(dvz);leaf(z); leaf(h_cm_p);leaf(h_cm_th);leaf(h_cm_ph);leaf(h_cm_eta);leaf(h_cm_rap);leaf(h_cm_pt); leaf(h_eta); leaf(dtime); leaf(dtime_corr); leaf(missing_mass);
 
    
    if(!isMC) tree = NULL;
-   leafx(e_truth_pid);leafx(e_truth_p);leafx(e_truth_th);leafx(e_truth_ph);
-   leaf(h_truth_pid);leaf(h_truth_p);leaf(h_truth_th);leaf(h_truth_ph);leaf(h_truth_cm_p);leaf(h_truth_cm_th);leaf(h_truth_cm_ph);leaf(h_truth_cm_eta);leaf(h_truth_cm_pt);leaf(h_truth_z);leaf(missing_mass_truth);
+   leafx(e_truth_pid);leafx(e_truth_p);leafx(e_truth_th);leafx(e_truth_ph);leafx(e_truth_px);leafx(e_truth_py);leafx(e_truth_pz);
+   leaf(h_truth_pid);leaf(h_truth_p);leaf(h_truth_th);leaf(h_truth_ph);leaf(h_truth_px);leaf(h_truth_py);leaf(h_truth_pz);leaf(h_truth_cm_p);leaf(h_truth_cm_th);leaf(h_truth_cm_ph);leaf(h_truth_cm_eta);leaf(h_truth_cm_rap);leaf(h_truth_cm_pt);leaf(h_truth_z);leaf(missing_mass_truth);
    
 
    TTree* dihadron_tree = createDihadronTree ? new TTree("dihadrons","dihadrons") : NULL;
    tree = dihadron_tree;   
-   leafx(E);leafx(helicity);leafx(e_p);leafx(e_th);leafx(e_ph);leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W); leafx(ntracks); 
+   leafx(E);leafx(helicity);leafx(e_p);leafx(e_th);leafx(e_ph);leafx(e_px);leafx(e_py);leafx(e_pz);leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W); leafx(ntracks); leaf(diff_phi_cm_mix);leaf(diff_eta_cm_mix);leaf(diff_rap_cm_mix);
    
 
    // macro creates fields for two hadrons
 #define leaf2(name) double h1_##name=0; double h2_##name=0; if(tree != NULL) {tree->Branch((TString)"h1_"+#name,&h1_##name,(TString)"h1_"+#name+(TString)"/D"); tree->Branch((TString)"h2_"+#name,&h2_##name,(TString)"h2_"+#name+(TString)"/D");}
-   leaf2(chi2pid);leaf2(pid);leaf2(p);leaf2(th);leaf2(ph);leaf2(z);leaf2(eta);
-   leaf2(cm_p);leaf2(cm_th);leaf2(cm_ph);leaf2(cm_eta);leaf2(cm_pt);
+   leaf2(chi2pid);leaf2(pid);leaf2(p);leaf2(th);leaf2(ph);leaf2(px);leaf2(py);leaf2(pz);leaf2(z);leaf2(eta);
+   leaf2(cm_p);leaf2(cm_th);leaf2(cm_ph);leaf2(cm_eta);leaf2(cm_rap);leaf2(cm_pt);
    leaf(pair_mass);leaf(mx_eh1h2x);leaf(mx_eh1x);leaf(mx_eh2x);
    leaf(diff_eta);
    leaf(diff_phi);
    leafx(nelectrons);
    leaf(diff_phi_cm);
    leaf(diff_eta_cm);
-
+   leaf(diff_rap_cm);
 
 
    
    if(!isMC) tree = NULL;
-   leafx(e_truth_pid);leafx(e_truth_p);leafx(e_truth_th);leafx(e_truth_ph);
+   leafx(e_truth_pid);leafx(e_truth_p);leafx(e_truth_th);leafx(e_truth_ph);leafx(e_truth_px);leafx(e_truth_py);leafx(e_truth_pz);
    leaf(h1_truth_z);
-   leaf(h1_truth_pid);leaf(h1_truth_p);leaf(h1_truth_th);leaf(h1_truth_ph);leaf(h1_truth_cm_p);
-   leaf(h1_truth_cm_th);leaf(h1_truth_cm_ph);leaf(h1_truth_cm_eta);leaf(h1_truth_cm_pt);
-   leaf(h2_truth_pid);leaf(h2_truth_p);leaf(h2_truth_th);leaf(h2_truth_ph);leaf(h2_truth_cm_p);leaf(h2_truth_z);
-   leaf(h2_truth_cm_th);leaf(h2_truth_cm_ph);leaf(h2_truth_cm_eta);leaf(h2_truth_cm_pt);
-   leaf(diff_phi_cm_truth);leaf(diff_eta_cm_truth);leaf(pair_mass_truth);leaf(mx_eh1h2x_truth);leaf(mx_eh1x_truth);leaf(mx_eh2x_truth);
+   leaf(h1_truth_pid);leaf(h1_truth_p);leaf(h1_truth_th);leaf(h1_truth_ph);leaf(h1_truth_px);leaf(h1_truth_py);leaf(h1_truth_pz);leaf(h1_truth_cm_p);
+   leaf(h1_truth_cm_th);leaf(h1_truth_cm_ph);leaf(h1_truth_cm_eta);leaf(h1_truth_cm_rap);leaf(h1_truth_cm_pt);
+   leaf(h2_truth_pid);leaf(h2_truth_p);leaf(h2_truth_th);leaf(h2_truth_ph);leaf(h2_truth_px);leaf(h2_truth_py);leaf(h2_truth_pz);leaf(h2_truth_cm_p);leaf(h2_truth_z);
+   leaf(h2_truth_cm_th);leaf(h2_truth_cm_ph);leaf(h2_truth_cm_eta);leaf(h2_truth_cm_rap);leaf(h2_truth_cm_pt);
+   leaf(diff_phi_cm_truth);leaf(diff_eta_cm_truth);leaf(diff_rap_cm_truth);leaf(pair_mass_truth);leaf(mx_eh1h2x_truth);leaf(mx_eh1x_truth);leaf(mx_eh2x_truth);
    
 
    // A small tree for storing dipion events, without requiring one of them to be leading
@@ -269,7 +272,7 @@ void SidisTuples(){
    leafx(nelectrons);
    leafx(E);leafx(helicity);leafx(e_p);leafx(e_th);leafx(e_ph);leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W);leafx(ntracks);
    leafx(h1_p);leafx(h2_p);leafx(h1_th);leafx(h2_th);leafx(h1_ph);leafx(h2_ph);
-   leafx(h1_cm_eta);leafx(h2_cm_eta);leafx(h1_cm_pt);leafx(h2_cm_pt);leafx(h1_z);leafx(h2_z);leafx(h1_pid);leafx(h2_pid);leafx(h1_cm_ph);leafx(h2_cm_ph);
+   leafx(h1_cm_eta);leafx(h2_cm_eta);leafx(h1_cm_rap);leafx(h2_cm_rap);leafx(h1_cm_pt);leafx(h2_cm_pt);leafx(h1_z);leafx(h2_z);leafx(h1_pid);leafx(h2_pid);leafx(h1_cm_ph);leafx(h2_cm_ph);
 
    leafx(diff_phi_cm);leafx(diff_eta_cm);leafx(pair_mass);leafx(mx_eh1h2x);leafx(mx_eh1x);leafx(mx_eh2x);
    
@@ -277,10 +280,10 @@ void SidisTuples(){
    leafx(e_truth_pid);leafx(e_truth_p);leafx(e_truth_th);leafx(e_truth_ph);
    
    leafx(h1_truth_pid);leafx(h1_truth_p);leafx(h1_truth_th);leafx(h1_truth_ph);leafx(h1_truth_z);
-   leafx(h1_truth_cm_ph);leafx(h1_truth_cm_eta);leafx(h1_truth_cm_pt);
+   leafx(h1_truth_cm_ph);leafx(h1_truth_cm_eta);leafx(h1_truth_cm_rap);leafx(h1_truth_cm_pt);
    leafx(h2_truth_pid);leafx(h2_truth_p);leafx(h2_truth_th);leafx(h2_truth_ph);leafx(h2_truth_z);
-   leafx(h2_truth_cm_ph);leafx(h2_truth_cm_eta);leafx(h2_truth_cm_pt);
-   leafx(diff_phi_cm_truth);leafx(diff_eta_cm_truth);leafx(pair_mass_truth);leafx(mx_eh1h2x_truth);leafx(mx_eh1x_truth);leafx(mx_eh2x_truth);
+   leafx(h2_truth_cm_ph);leafx(h2_truth_cm_eta);leafx(h2_truth_cm_rap);leafx(h2_truth_cm_pt);
+   leafx(diff_phi_cm_truth);leafx(diff_eta_cm_truth);leafx(diff_rap_cm_truth);leafx(pair_mass_truth);leafx(mx_eh1h2x_truth);leafx(mx_eh1x_truth);leafx(mx_eh2x_truth);
    
    
 
@@ -364,6 +367,14 @@ void SidisTuples(){
      // so these must not be excluded
      if(!isMC)
        c12.addAtLeastPid(11,1);
+
+     // for event mixing:  the cm frame fourvector two events ago
+     TLorentzVector cm_mix = {0,0,0,0};
+     // for event mixing:  the cm frame fourvector one events ago 
+     TLorentzVector cm_mix_tmp = {0,0,0,0};
+     // for event mixing: the trigger hadron in the previous entry.
+     TLorentzVector had_mix = {0,0,0,0};
+
      while(c12.next()==true){
        if(isMC && E==0){
 	 auto dict = c12.getDictionary();
@@ -487,6 +498,9 @@ void SidisTuples(){
 	 //if(debug) cout << "CHECK 1" <<endl;
 	 SetLorentzVector(el,electrons[i], 0.000511); 
 	 e_p = el.P();
+	 e_px = el.Px();
+	 e_py = el.Py();
+	 e_pz = el.Pz();
 	 //if(debug) cout<< "e_p: " << e_p <<" "<< el.P() << endl;
 	 e_th = el.Theta();
 	 e_ph = el.Phi();
@@ -588,6 +602,9 @@ void SidisTuples(){
 	   e_truth_p = 0;
 	   e_truth_th = 0;
 	   e_truth_ph = 0;
+	   e_truth_px = 0;
+	   e_truth_py = 0;
+	   e_truth_pz = 0;
 	   int kbest = -1;
 	   TVector3 mc;
 	   for(int k = 0; k<mcparts->getRows();k++){
@@ -619,6 +636,9 @@ void SidisTuples(){
 	     e_truth_p = e_truth.P();
 	     e_truth_th = e_truth.Theta();
 	     e_truth_ph = e_truth.Phi();
+	     e_truth_px = e_truth.Px();
+	     e_truth_py = e_truth.Py();
+	     e_truth_pz = e_truth.Pz();
 	     cm_truth = beam+target-e_truth;
 	     e_truth_vx = mcparts->getVx(kbest);
 	     e_truth_vy = mcparts->getVy(kbest);
@@ -665,6 +685,10 @@ void SidisTuples(){
 	     h_eta = had.PseudoRapidity();
 	     h_ph = had.Phi();
 	     
+	     h_px = had.Px();
+	     h_py = had.Py();
+	     h_pz = had.Pz();
+
 	     //h_pid = h->par()->getPid();
 	     h_chi2pid = h->par()->getChi2Pid();
 	     //if(debug) cout << "chi2pid" << endl;
@@ -683,6 +707,7 @@ void SidisTuples(){
 	     h_cm_p = h_cm.P();
 	     h_cm_th = h_cm.Theta();
 	     h_cm_eta = h_cm.PseudoRapidity();
+	     h_cm_rap = h_cm.Rapidity();
 	     h_cm_ph = h_cm.Phi();
 	     h_cm_pt = h_cm.Pt();
 	     //if(debug) cout << h_cm_p << " " << pi_cm_th << " " << pi_cm_ph << endl;
@@ -695,9 +720,13 @@ void SidisTuples(){
 	       h_truth_p = 0;
 	       h_truth_th = 0;
 	       h_truth_ph = 0;
+	       h_truth_px = 0;
+               h_truth_py = 0;
+               h_truth_pz = 0;
 	       h_truth_cm_p = 0;
 	       h_truth_cm_th = 0;
 	       h_truth_cm_eta = 0;
+	       h_truth_cm_rap = 0;
 	       h_truth_cm_ph = 0;
 	       h_truth_cm_pt = 0;
 	       //int kbest = -1;
@@ -734,11 +763,15 @@ void SidisTuples(){
 		 h_truth_p = h_truth.P();
 		 h_truth_th = h_truth.Theta();
 		 h_truth_ph = h_truth.Phi();
-		 h_truth_z = h_truth_p/(E-e_truth_p);
+		 h_truth_px = h_truth.Px();
+		 h_truth_py = h_truth.Py();
+		 h_truth_pz = h_truth.Pz();
+		 h_truth_z = h_truth.E()/(E-e_truth_p);
 		 
 		 h_truth_cm_p = h_truth_cm.P();
 		 h_truth_cm_th = h_truth_cm.Theta();
 		 h_truth_cm_eta = h_truth_cm.PseudoRapidity();
+		 h_truth_cm_rap = h_truth_cm.Rapidity();
 		 h_truth_cm_ph = h_truth_cm.Phi();
 		 h_truth_cm_pt = h_truth_cm.Pt();
 	       } 
@@ -757,6 +790,10 @@ void SidisTuples(){
 	       h1_p = h_p;
 	       h1_th = h_th;
 	       h1_eta = h_eta;
+	       h1_px = h_px;
+               h1_py = h_py;
+               h1_pz = h_pz;
+
 	       h1_ph = h_ph;
 	       h1_chi2pid = h_chi2pid;
 	       
@@ -764,6 +801,7 @@ void SidisTuples(){
 	       h1_cm_th = h_cm_th;
 	       h1_cm_ph =h_cm_ph;
 	       h1_cm_eta = h_cm_eta;
+	       h1_cm_rap = h_cm_rap;
 	       h1_cm_pt = h_cm_pt;
 	       h1_z = z;
 	       h1 = had;
@@ -777,6 +815,7 @@ void SidisTuples(){
 		 h1_truth_cm_p = h_truth_cm_p;
 		 h1_truth_cm_th = h_truth_cm_th;
 		 h1_truth_cm_eta = h_truth_cm_eta;
+		 h1_truth_cm_rap = h_truth_cm_rap;
 		 h1_truth_cm_ph = h_truth_cm_ph;
 		 h1_truth_cm_pt = h_truth_cm_pt;
 	       }
@@ -804,12 +843,24 @@ void SidisTuples(){
 		 h2_p = had2.P();
 		 h2_th = had2.Theta();
 		 h2_ph = had2.Phi();
+		 h2_px = had2.Px();
+		 h2_py = had2.Py();
+		 h2_pz = had2.Pz();
 		 h2_cm_pt = had2_cm.Pt();
 		 h2_cm_ph = had2_cm.Phi();
 		 h2_cm_eta = had2_cm.Eta();
+		 h2_cm_rap = had2_cm.Rapidity();
 		 h2_pid = pid;
 		 diff_phi_cm = angle(h1_cm_ph-h2_cm_ph);
 		 diff_eta_cm = h1_cm_eta-h2_cm_eta;
+		 diff_rap_cm = h1_cm_rap-h2_cm_rap;
+
+		 TLorentzVector had_cm_mix;
+		 toCM(cm_mix, had,had_cm_mix);
+		 diff_phi_cm_mix = angle(had_cm_mix.Phi()-h2_cm_ph);
+		 diff_eta_cm_mix = had_cm_mix.Eta()-h2_cm_eta;
+		 diff_rap_cm_mix = had_cm_mix.Rapidity()-h2_cm_rap;
+
 		 pair_mass = (had2+had).M();
 		 mx_eh1h2x = (beam+target-el-had-had2).M();
 		 mx_eh1x = (beam+target-el-had).M();
@@ -845,9 +896,14 @@ void SidisTuples(){
 		   h2_truth_p=0;
 		   h2_truth_th=0;
 		   h2_truth_ph=0;
+		   
+		   h2_truth_px=0;
+		   h2_truth_py=0;
+		   h2_truth_pz=0;
 		   h2_truth_cm_pt=0;
 		   h2_truth_cm_ph=0;
 		   h2_truth_cm_eta=0;
+		   h2_truth_cm_rap=0;
 		   
 		   //double h1_p = had.P();
 		   double h2_th = had2.Theta();
@@ -887,10 +943,15 @@ void SidisTuples(){
 		     h2_truth_p = h2_truth.P();
 		     h2_truth_th = h2_truth.Theta();
 		     h2_truth_ph = h2_truth.Phi();
+
+		     h2_truth_px = h2_truth.Px();
+		     h2_truth_py = h2_truth.Py();
+		     h2_truth_pz = h2_truth.Pz();
 		     TLorentzVector h2_truth_cm;
 		     toCM(cm_truth, h2_truth,h2_truth_cm);
 		     h2_truth_cm_pt = h2_truth_cm.Pt();
 		     h2_truth_cm_eta = h2_truth_cm.Eta();
+		     h2_truth_cm_rap = h2_truth_cm.Rapidity();
 		     h2_truth_cm_ph = h2_truth_cm.Phi();
 		   }
 		   if(isMC){
@@ -920,6 +981,7 @@ void SidisTuples(){
              nKm++;
 	     nh++;
 	     z_tot+=z;
+	     had_mix = had;//store the current hadron as the "mix" hadron.  
 	   }
 	 
 	 
@@ -927,7 +989,8 @@ void SidisTuples(){
 	 if(electron_tree != NULL)
            electron_tree->Fill();
          electrons_passCuts++;
-	   
+	 cm_mix = cm_mix_tmp;
+	 cm_mix_tmp = cm;
 	   
        }
        if(debug) cout << "end electron loop"<<endl;
@@ -953,7 +1016,7 @@ void SidisTuples(){
 	     // the electron is reconstructed
 	     if(e_p == defval)
 	       continue;
-	     h_chi2pid = h_pid = h_p = h_th = h_ph = z = h_DC1x = h_DC2x = h_DC3x = h_DC1y = h_DC2y = h_DC3y = dvz = h_cm_th = h_cm_ph = h_cm_eta = h_cm_pt = h_cm_p = defval; 
+	     h_chi2pid = h_pid = h_p = h_th = h_ph = h_px = h_py = h_pz = z = h_DC1x = h_DC2x = h_DC3x = h_DC1y = h_DC2y = h_DC3y = dvz = h_cm_th = h_cm_ph = h_cm_eta = h_cm_pt = h_cm_p = defval; 
 	     h_truth_p = mc.P();
 	     h_truth_th = mc.Theta();
 	     h_truth_ph = mc.Phi();
@@ -967,6 +1030,10 @@ void SidisTuples(){
 	     e_truth_p = mc.P();
 	     e_truth_th = mc.Theta();
 	     e_truth_ph = mc.Phi();
+	     e_truth_px = mc.Px();
+             e_truth_py = mc.Py();
+             e_truth_pz = mc.Pz();
+
 	     e_truth_pid = 11;
 	     
 	     e_truth_vx = mcparts->getVx(k);
