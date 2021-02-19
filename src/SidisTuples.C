@@ -247,7 +247,7 @@ void SidisTuples(){
 
    TTree* dihadron_tree = createDihadronTree ? new TTree("dihadrons","dihadrons") : NULL;
    tree = dihadron_tree;   
-   leafx(E);leafx(helicity);leafx(e_p);leafx(e_th);leafx(e_ph);leafx(e_px);leafx(e_py);leafx(e_pz);leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W); leafx(ntracks); leafx(nhtracks); leaf(diff_phi_cm_mix);leaf(diff_eta_cm_mix);leaf(diff_rap_cm_mix);
+   leafx(E);leafx(helicity);leafx(e_p);leafx(e_th);leafx(e_ph);leafx(e_px);leafx(e_py);leafx(e_pz);leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W); leafx(ntracks); leafx(nhtracks); leaf(diff_phi_cm_mix);leaf(diff_eta_cm_mix);leaf(diff_rap_cm_mix);leaf(h2_assoc_index);
    
 
    // macro creates fields for two hadrons
@@ -474,8 +474,15 @@ void SidisTuples(){
 
        auto electrons=c12.getByID(11);
        
-       if(c12.helonline() != NULL)
-	 helicity = c12.helonline()->getHelicity();
+       if(c12.helonline() != NULL){
+	 //cout << "helicity is not null" << endl;
+	 //helicity = c12.helonline()->getHelicity();
+	 helicity = c12.event()->getHelicity();
+	 //cout << "helicity is " << helicity << endl;
+       }
+       else{
+	 //cout << "helicity is NULL"<<endl;
+       }
        //if(debug) cout << "helicity" << endl;
        TLorentzVector el(0,0,0,db->GetParticle(11)->Mass());
        
@@ -848,6 +855,7 @@ void SidisTuples(){
 		 h1_truth_cm_ph = h_truth_cm_ph;
 		 h1_truth_cm_pt = h_truth_cm_pt;
 	       }
+	       h2_assoc_index = 0;
 	       for(int k = 0; k<parts.size();k++){
 		 if(k == j)
 		   continue;
@@ -919,6 +927,7 @@ void SidisTuples(){
 		 if(dihadron_tree == NULL && dipion_tree != NULL && abs(h2_pid) != 211)
 		   continue;
 
+		 
 		 if(isMC){
 		   h2_truth_z=0;
 		   h2_truth_pid=0;
@@ -988,10 +997,12 @@ void SidisTuples(){
 		     diff_eta_cm_truth = h2_truth_cm_eta-h1_truth_cm_eta;
 		   }
 		 }
+		 
 		 if(dihadron_tree!= NULL && h1_z>0.5)
 		   dihadron_tree->Fill();
 		 if(dipion_tree != NULL && abs(h2_pid)==211)
 		   dipion_tree->Fill();
+		 h2_assoc_index++;
 	       }
 
 	     }
