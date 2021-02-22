@@ -1,4 +1,4 @@
-import sys,pandas as pd, matplotlib , matplotlib.pyplot as plt, matplotlib.lines , numpy as np,cupy as cp, math, pylab, uproot3,time, threading
+import sys,pandas as pd, matplotlib , matplotlib.pyplot as plt, matplotlib.lines , numpy as np,cupy as cp, math, pylab, uproot3,time, multiprocessing
 
 import ROOT
 masses = {211: 0.13957018, -211: 0.13957018, 321: 0.493677, -321: 0.493677, 2212: 0.93827208816, -2212: 0.93827208816}
@@ -178,7 +178,25 @@ if __name__ == '__main__':
             maxEvents=int(arg[3:])
         elif '-n=' in arg:
             nAssocPerTrigger=int(arg[3:])
-    import threading
+
+    def process(j0):
+        df_mixed = mix_from_singles(df, binvars=''.split(), nbins=1,maxEvents=maxEvents, nAssocPerTrigger=1,j0=j0)
+        filei=outfile +("%s.pkl"%j0)                                                   
+        pd.to_pickle(df_mixed,filei)
+        print("wrote to file "+filei)
+    
+    processes = []
+    for j0 in range(0,10):
+        p = multiprocessing.Process(target=process, args=(j0,))
+        processes.append(p)
+        p.start()
+        
+    for process in processes:
+        process.join()
+        
+
+    
+'''    import threading
     class myThread (threading.Thread):
         def __init__(self, j0):
             threading.Thread.__init__(self)
@@ -192,3 +210,4 @@ if __name__ == '__main__':
     for j0 in range(nAssocPerTrigger):
         a = myThread(j0)
         a.start()
+'''
