@@ -226,7 +226,7 @@ void SidisTuples(){
    // don't add these variables to the tree unless running MC 
    if(!isMC)
      tree = NULL;
-   leaf(e_truth_pid);leaf(e_truth_p);leaf(e_truth_th);leaf(e_truth_ph);leaf(e_truth_px);leaf(e_truth_py);leaf(e_truth_pz);leaf(e_truth_vx);leaf(e_truth_vy); leaf(e_truth_vz);
+   leaf(e_truth_pid);leaf(e_truth_p);leaf(e_truth_th);leaf(e_truth_ph);leaf(e_truth_px);leaf(e_truth_py);leaf(e_truth_pz);leaf(e_truth_vx);leaf(e_truth_vy); leaf(e_truth_vz);leaf(nhtracks_truth);
    
 
    //cout << "made leaves" <<endl;
@@ -242,12 +242,12 @@ void SidisTuples(){
    
    if(!isMC) tree = NULL;
    leafx(e_truth_pid);leafx(e_truth_p);leafx(e_truth_th);leafx(e_truth_ph);leafx(e_truth_px);leafx(e_truth_py);leafx(e_truth_pz);
-   leaf(h_truth_pid);leaf(h_truth_p);leaf(h_truth_th);leaf(h_truth_ph);leaf(h_truth_px);leaf(h_truth_py);leaf(h_truth_pz);leaf(h_truth_cm_p);leaf(h_truth_cm_th);leaf(h_truth_cm_ph);leaf(h_truth_cm_eta);leaf(h_truth_cm_rap);leaf(h_truth_cm_pt);leaf(h_truth_z);leaf(missing_mass_truth);
+   leaf(h_truth_pid);leaf(h_truth_p);leaf(h_truth_th);leaf(h_truth_ph);leaf(h_truth_px);leaf(h_truth_py);leaf(h_truth_pz);leaf(h_truth_cm_p);leaf(h_truth_cm_th);leaf(h_truth_cm_ph);leaf(h_truth_cm_eta);leaf(h_truth_cm_rap);leaf(h_truth_cm_pt);leaf(h_truth_z);leaf(missing_mass_truth);leafx(nhtracks_truth);
    
 
    TTree* dihadron_tree = createDihadronTree ? new TTree("dihadrons","dihadrons") : NULL;
    tree = dihadron_tree;   
-   leafx(E);leafx(helicity);leafx(e_p);leafx(e_th);leafx(e_ph);leafx(e_px);leafx(e_py);leafx(e_pz);leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W); leafx(ntracks); leafx(nhtracks); leaf(diff_phi_cm_mix);leaf(diff_eta_cm_mix);leaf(diff_rap_cm_mix);
+   leafx(E);leafx(helicity);leafx(e_p);leafx(e_th);leafx(e_ph);leafx(e_px);leafx(e_py);leafx(e_pz);leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W); leafx(ntracks); leafx(nhtracks); leaf(diff_phi_cm_mix);leaf(diff_eta_cm_mix);leaf(diff_rap_cm_mix);leaf(h2_assoc_index);
    
 
    // macro creates fields for two hadrons
@@ -271,7 +271,7 @@ void SidisTuples(){
    leaf(h1_truth_cm_th);leaf(h1_truth_cm_ph);leaf(h1_truth_cm_eta);leaf(h1_truth_cm_rap);leaf(h1_truth_cm_pt);
    leaf(h2_truth_pid);leaf(h2_truth_p);leaf(h2_truth_th);leaf(h2_truth_ph);leaf(h2_truth_px);leaf(h2_truth_py);leaf(h2_truth_pz);leaf(h2_truth_cm_p);leaf(h2_truth_z);
    leaf(h2_truth_cm_th);leaf(h2_truth_cm_ph);leaf(h2_truth_cm_eta);leaf(h2_truth_cm_rap);leaf(h2_truth_cm_pt);
-   leaf(diff_phi_cm_truth);leaf(diff_eta_cm_truth);leaf(diff_rap_cm_truth);leaf(pair_mass_truth);leaf(mx_eh1h2x_truth);leaf(mx_eh1x_truth);leaf(mx_eh2x_truth);
+   leaf(diff_phi_cm_truth);leaf(diff_eta_cm_truth);leaf(diff_rap_cm_truth);leaf(pair_mass_truth);leaf(mx_eh1h2x_truth);leaf(mx_eh1x_truth);leaf(mx_eh2x_truth);leafx(nhtracks_truth);
    
 
    // A small tree for storing dipion events, without requiring one of them to be leading
@@ -474,15 +474,34 @@ void SidisTuples(){
 
        auto electrons=c12.getByID(11);
        
-       if(c12.helonline() != NULL)
-	 helicity = c12.helonline()->getHelicity();
+       if(c12.helonline() != NULL){
+	 //cout << "helicity is not null" << endl;
+	 //helicity = c12.helonline()->getHelicity();
+	 helicity = c12.event()->getHelicity();
+	 //cout << "helicity is " << helicity << endl;
+       }
+       else{
+	 //cout << "helicity is NULL"<<endl;
+       }
        //if(debug) cout << "helicity" << endl;
        TLorentzVector el(0,0,0,db->GetParticle(11)->Mass());
        
        mcpar_ptr mcparts;
        if(isMC){
 	 mcparts = c12.mcparts();
+	 nhtracks_truth =0;
+	 //skip the first two entries; these are the initial state particles
+	 //the intermediate state particles are removed by the pid cuts
+	 for(int kk = 2; kk<mcparts->getRows();kk++){
+	   int pid = mcparts->getPid(kk);
+	   if(debug) cout << pid << " ";
+	   if(abs(pid)==211 || abs(pid) == 321 || abs(pid)==2212)
+	     nhtracks_truth++;
+	 }
+	 if(debug) cout << endl;
        }
+       
+
        auto parts=c12.getDetParticles(); 
        /*if(electrons.size() == 2){
 	 if(debug) cout << "electrons" << endl;
@@ -836,6 +855,7 @@ void SidisTuples(){
 		 h1_truth_cm_ph = h_truth_cm_ph;
 		 h1_truth_cm_pt = h_truth_cm_pt;
 	       }
+	       h2_assoc_index = 0;
 	       for(int k = 0; k<parts.size();k++){
 		 if(k == j)
 		   continue;
@@ -907,6 +927,7 @@ void SidisTuples(){
 		 if(dihadron_tree == NULL && dipion_tree != NULL && abs(h2_pid) != 211)
 		   continue;
 
+		 
 		 if(isMC){
 		   h2_truth_z=0;
 		   h2_truth_pid=0;
@@ -976,10 +997,12 @@ void SidisTuples(){
 		     diff_eta_cm_truth = h2_truth_cm_eta-h1_truth_cm_eta;
 		   }
 		 }
+		 
 		 if(dihadron_tree!= NULL && h1_z>0.5)
 		   dihadron_tree->Fill();
 		 if(dipion_tree != NULL && abs(h2_pid)==211)
 		   dipion_tree->Fill();
+		 h2_assoc_index++;
 	       }
 
 	     }

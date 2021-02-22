@@ -93,6 +93,14 @@ Example:\\
 
 This creates opens the file \code{/work/clas12/rg-a/montecarlo/fall2018/torus-1/clasdis/nobg/DIS\_pass1\_997\_1002.hipo}, and outputs a file \code{mc\_electrons.root}.  The \code{-{}-isMC} flag tells the program that the input file is from a Monte-Carlo simulation.  The optional \code{-{}-skipEvents} and \code{-{}-N} arguments tells the program to skip the first 600k events, and then processes the next 300k events.  The output contains only the electrons tuple, as specified by the \code{-{}-includeElectrons} flag.  The hadrons, dihadrons and dipions tuples can be created by using the \code{-{}-includeHadrons}, \code{-{}-includeDihadrons}, and \code{-{}-includeDipions} flags respectively.  If no flag for including a tuple in the output is provided, then the program will terminate without processing any data.  
  
+ \subsection{Flags}
+\begin{itemize}
+\item \code{-{}-qadbPath=[/path/to/qadb.json]}: (optional) perform quality assurance cuts using the specified qadb file.  Currently this means using golden runs/files only.  
+\item \code{-{}-in=[/path/to/input/file.hipo]}: use the specified hipo file for input.  Several instances of this flag can allow multiple input files.
+\item \code{-{}-out=[/path/to/output/file.root]}: use the specified root file for output
+\item \code{-{}-N=[numberOfEventsToProcess]}:  process the specified number of process.  
+\item \code{-{}-isMC}: flag to specify that the input file is MC.  This adds some new variables to the output, and also bypasses looking up run conditions in the RCDB.  
+\end{itemize}
 
 \section{Tuples generated}
 The following subsections detail the tuples that are generated
@@ -122,15 +130,19 @@ Event-quality cuts:
 List of variables:
 \begin{itemize}
 \item \code{E}:  beam energy in GeV
-\item \code{e\_p}:  momentum of electron [GeV]
-\item \code{e\_th}:  polar angle (theta) of electron [rad]
-\item \code{e\_ph}:  azimuthal angle (phi) of electron [rad]
+\item \code{e\_p}:  momentum of electron in the lab frame [GeV]
+\item \code{e\_th}:  polar angle (theta) of electron in the lab frame [rad]
+\item \code{e\_ph}:  azimuthal angle (phi) of electron in the lab frame [rad]
+\item \code{e\_px}: $x$ component of the momentum of electron in the lab frame [GeV]
+\item \code{e\_py}: $y$ component of the momentum of electron in the lab frame [GeV]
+\item \code{e\_pz}: $z$ component of the momentum of electron in the lab frame [GeV]
 \item \code{Q2}:  momentum transfer $Q^2$ [GeV$^2$]
 \item \code{W}:  invariant mass of the target proton + virtual photon system [GeV]
 \item \code{nu}:  energy loss of electron, $\nu \equiv E-E'$ [GeV]
 \item \code{x}:  Bj\" orken $x\equiv Q^2/(2m_p \nu)$)
 \item \code{y}:  fractional energy loss, $y\equiv\nu/E$
 \end{itemize}
+
 
 \subsection{hadrons tuple} 
 This tuple contains all charged hadrons that pass fiducial and PID cuts, and are accompanied by an electron that passes the cuts in the electron tuple.  There may be multiple entries per event if there are multiple hadrons associated with an electron.  
@@ -143,14 +155,19 @@ Cuts:
 \end{itemize}
 List of variables:
 \begin{itemize}
-\item \code{z}:  energy of hadron divided by $\nu$
+\item \code{z}:  energy of hadron (in lab frame) divided by $\nu$
 \item \code{h\_pid}:  particle identification number of hadron \cite{pdgcodes}
 \item \code{h\_chi2pid}:  goodness of particle identification
 \item \code{h\_p} momentum of hadron in lab frame [GeV]
 \item \code{h\_th} polar angle (theta) of hadron in lab frame [rad]
 \item \code{h\_ph} azimuthal angle (phi) of hadron in lab frame [rad]
+\item \code{h\_px}: $x$ component of the momentum of hadron in the lab frame [GeV]
+\item \code{h\_py}: $y$ component of the momentum of hadron in the lab frame [GeV]
+\item \code{h\_pz}: $z$ component of the momentum of hadron in the lab frame [GeV]
+\item variables with \code{\_cm} refer to the center of mass frame.  Starting from the lab frame, there is a rotation so that the scattered electron's momentum is in the $xz$ plane (and the $x$ component is positive) followed by a boost so that the proton + virtual photon system is at rest.  
 \item \code{h\_cm\_pt} transverse momentum of hadron in CM frame [GeV]
-\item \code{h\_cm\_eta} pseudorapidity of hadron in CM frame [dimensionless]
+\item \code{h\_cm\_eta} pseudorapidity of hadron in CM frame, $-\ln\tan\frac{\theta^{\rm c.m.}_h}{2}$[dimensionless]
+\item \code{h\_cm\_rap} rapidity of hadron in the CM frame $\frac {1}{2} \log\left(\frac{E^{\rm c.m.}_h+p^{\rm c.m.}_{z,h}}{E^{\rm c.m.}_h-p^{\rm c.m.}_{z,h}}\right)$ [dimensionless]
 \item \code{h\_cm\_ph} azimuthal angle (phi) of hadron in CM frame [rad]
 \item \code{h\_cm\_p}  momentum of hadron in CM frame [GeV]
 \item \code{h\_cm\_th} azimuthal angle (theta) of hadron in CM frame [rad]
@@ -160,7 +177,7 @@ List of variables:
 
 
 \subsection{dihadrons tuple} 
-This tuple requires a DIS electron, and two charged hadrons (one of which is a leading pion ($z>0.5$)).  The requirements for the electron and the hadrons are the same as those of the electrons and hadrons tuples.
+This tuple requires a DIS electron, and two charged hadrons.  One of the two hadrons is the ``trigger hadron", which in this case is a leading pion ($z>0.5$), and the other is called the ``associated hadron".  The requirements for the electron and the hadrons are the same as those of the electrons and hadrons tuples.
 
 \begin{itemize}
 \item Variables with the \code{h1\_} prefix correspond to the leading pion in the dihadron pair.  Variables with the \code{h2\_} prefix correspond to those of the other hadron in the pair
@@ -169,10 +186,14 @@ This tuple requires a DIS electron, and two charged hadrons (one of which is a l
 \item \code{mx\_eh2x} missing mass (beam + target $-$ electron $-$ hadron2)
 \item \code{pair\_mass} invariant mass of the pair (hadron1 $-$ hadron2)
 \item \code{diff\_phi\_cm} difference in azimuthal angle between hadrons in the CM frame [rad]
-\item \code{diff\_phi\_cm} difference in pseudorapiditiy between hadrons in the CM frame.
+\item \code{diff\_eta\_cm} difference in pseudorapiditiy between hadrons in the CM frame.
+\item \code{diff\_rap\_cm} difference in rapiditiy between hadrons in the CM frame.
+\item  variables with the \code{\_mix} prefix are those constructed using event mixing.  See Sec.~\ref{sec:event_mixing}
 \end{itemize}
 
 \subsection{dipions tuple}
 Similar to the dihadrons tuple, this requires a DIS electron and two charged hadrons.  This tuple requires that both hadrons be pions, however there is no cut on $z$ for either hadron unlike the dihadrons tuple. 
-
+\section{Event Mixing}
+\label{sec:event_mixing}
+The event mixing for the dihadron tuple is performed using the electron from two DIS events ago, the trigger hadron one dihadron event ago, and the associated hadron of the current entry.  
 \end{document}
