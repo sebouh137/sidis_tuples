@@ -67,16 +67,16 @@ bool pcalOK(clas12::region_part_ptr p){
 //list of cuts
 double cut_ECfracmin = 0.17;
 double cut_pcalmin = 0.07;
-double cut_evzmin = -8;//-13;
-double cut_evzmax = 1;//12;
+double cut_evzmin =  -13; // inbending    -8;//-13;
+double cut_evzmax =  12;  // inbending     1;//12;
 
 //double cut_Wmin  = 2;
 double cut_Q2min = 1;
 double cut_Wmin = 2;
 double cut_ymax  = 0.85;
 
-double cut_dvzmin = -5;//-20;
-double cut_dvzmax = 5;//20;
+double cut_dvzmin = -20; //-5;//-20;
+double cut_dvzmax = 20; //5;//20;
 
 double cut_dtime_corr = 0.3;
 
@@ -837,7 +837,7 @@ leaf(pair_pt_cm);leaf(pair_phi_cm); leaf(pair_pt);leaf(pair_phi);
 	     if(debug) cout << "filled hadron tree"<< endl;
 
 	     //leading pion is a high-z pion, and a second hadron of any type
-	     if((z > 0.5 && abs(h_pid)==211 && dihadron_tree!= NULL) || (dipion_tree != NULL && abs(h_pid)==211)){
+	     if((z > 0.4 && abs(h_pid)==211 && dihadron_tree!= NULL) || (dipion_tree != NULL && abs(h_pid)==211)){
 	       h1_pid = h_pid;
 	       h1_p = h_p;
 	       h1_th = h_th;
@@ -884,6 +884,9 @@ leaf(pair_pt_cm);leaf(pair_phi_cm); leaf(pair_pt);leaf(pair_phi);
 		 if(debug) cout << "check1" << endl;
 		 auto h2 = parts[k];
 		 int pid = h2->getPid();
+		 h2_pid = pid;
+		 if(h2_pid != 211 && h2_pid != -211 && h2_pid != 2212 && h2_pid != -2212 && h2_pid != 321 && h2_pid != -321)
+		   continue;
 		 TLorentzVector had2;
 		 TLorentzVector had2_cm;
 		 if(db->GetParticle(pid) == NULL || db->GetParticle(pid)->Mass()==0)
@@ -893,6 +896,8 @@ leaf(pair_pt_cm);leaf(pair_phi_cm); leaf(pair_pt);leaf(pair_phi);
 		 toCM(cm, had2,had2_cm);
 		 
 		 h2_z = had2.E()/nu;
+		 if(h2_z>h1_z)
+		   continue;
 		 h2_p = had2.P();
 		 h2_th = had2.Theta();
 		 h2_ph = had2.Phi();
@@ -929,8 +934,7 @@ leaf(pair_pt_cm);leaf(pair_phi_cm); leaf(pair_pt);leaf(pair_phi);
 		 mx_eh2x = (beam+target-el-had2).M();
 
 		 dtime = electrons[i]->getTime()-h2->getTime();
-		 if(h2_pid != 211 && h2_pid != -211 && h2_pid != 2212 && h2_pid != -2212 && h2_pid != 321 && h2_pid != -321)
-		      continue;
+		 
                  if(!dcOK(h2))
                    continue;
                  double mass = db->GetParticle(h2_pid)->Mass();
@@ -1023,7 +1027,7 @@ leaf(pair_pt_cm);leaf(pair_phi_cm); leaf(pair_pt);leaf(pair_phi);
 		   }
 		 }
 		 
-		 if(dihadron_tree!= NULL && h1_z>0.5)
+		 if(dihadron_tree!= NULL && h1_z>0.4)
 		   dihadron_tree->Fill();
 		 if(dipion_tree != NULL && abs(h2_pid)==211)
 		   dipion_tree->Fill();
