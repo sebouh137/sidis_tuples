@@ -82,13 +82,16 @@ double cut_dtime_corr = 0.3;
 
 double cut_chi2pidmin = -2.5, cut_chi2pidmax = 2.5;
 
+double cut_HTCCmin = 2;
+
 //double cut_zmin = 0.3;
 
 void toCM(TLorentzVector cm, TLorentzVector p,TLorentzVector& result){
   result = p;
   //  result.Print();
-  result.RotateZ(-cm.Phi());
-  result.RotateY(-cm.Theta());
+  result.RotateZ(TMath::Pi()-cm.Phi());
+  result.RotateY(cm.Theta());
+
   result.Boost(0,0,-cm.Beta());
   //result.Print();
   //return result;
@@ -248,6 +251,8 @@ void SidisTuples(){
    TTree* dihadron_tree = createDihadronTree ? new TTree("dihadrons","dihadrons") : NULL;
    tree = dihadron_tree;   
    leafx(E);leafx(helicity);leafx(e_p);leafx(e_th);leafx(e_ph);leafx(e_px);leafx(e_py);leafx(e_pz);leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W); leafx(ntracks); leafx(nhtracks); leaf(diff_phi_cm_mix);leaf(diff_eta_cm_mix);leaf(diff_rap_cm_mix);leaf(h2_assoc_index);
+
+leaf(pair_pt_cm);leaf(pair_phi_cm); leaf(pair_pt);leaf(pair_phi);
    
 
    // macro creates fields for two hadrons
@@ -578,14 +583,22 @@ void SidisTuples(){
 	 nu = (beam.E()-el.E());
 	 y = nu/E;
 	 
-	 if(useCuts && (Q2<cut_Q2min || W<cut_Wmin || y > cut_ymax))
+	 if(Q2<cut_Q2min) 
+	   continue;
+	 if(W<cut_Wmin)
+	   continue;
+	 if(y > cut_ymax)
            continue;
 	 
-	 //if(useCuts && y>cut_ymax)
-	 //continue;
 	 cm = beam+target-el;
 
-	 
+	 //check that the cm outgoing electron has phi=0
+	 //TLorentzVector tmp;
+	 //toCM(cm, el,tmp);
+	 //cout << tmp.Phi() << endl;
+	 //toCM(cm, beam-el, tmp);
+	 //cout << "  " << tmp.Theta() << endl;
+
 	 auto parts=c12.getDetParticles();
 	 ntracks=0;
 	 nhtracks=0;
@@ -613,6 +626,9 @@ void SidisTuples(){
 	 if(debug) cout << ntracks << " tracks" << endl;
 	 //if(debug) cout << "parts" << endl;
 	 
+	 double nHTCC = electrons[i]->che(HTCC)->getNphe();
+	 if(nHTCC<=cut_HTCCmin)
+	   continue;
 
 
 	 //if(debug) cout << "cm:"<<endl;
@@ -728,12 +744,12 @@ void SidisTuples(){
 	     //h_pid = h->par()->getPid();
 	     h_chi2pid = h->par()->getChi2Pid();
 	     //if(debug) cout << "chi2pid" << endl;
-	     if(useCuts && abs(h_chi2pid) > cut_chi2pidmax)
+	     if(abs(h_chi2pid) > cut_chi2pidmax)
 	       continue;
 	     
 	     dvz = electrons[i]->par()->getVz()-h->par()->getVz();
 	     
-	     if(useCuts && (dvz < cut_dvzmin || dvz > cut_dvzmax))
+	     if(dvz < cut_dvzmin || dvz > cut_dvzmax)
 	       continue;
 	     
 	     z = had.E()/nu;
@@ -891,6 +907,15 @@ void SidisTuples(){
 		 diff_phi_cm = angle(h1_cm_ph-h2_cm_ph);
 		 diff_eta_cm = h1_cm_eta-h2_cm_eta;
 		 diff_rap_cm = h1_cm_rap-h2_cm_rap;
+		 
+		 TLorentzVector pair_cm = had2_cm+h_cm;
+		 pair_pt_cm = pair_cm.Pt();
+		 pair_phi_cm = pair_cm.Phi();
+		 
+		 TLorentzVector pair = had2 + had;
+		 pair_pt = pair.Pt();
+                 pair_phi = pair.Phi();
+		 
 
 		 TLorentzVector had_cm_mix;
 		 toCM(cm_mix, had,had_cm_mix);
@@ -1035,8 +1060,8 @@ void SidisTuples(){
        }
        if(debug) cout << "end electron loop"<<endl;
      
-       if(electron_tree != NULL)
-	 electron_tree->Fill();
+       //if(electron_tree != NULL)
+       //electron_tree->Fill();
        TLorentzVector mc;
        if(isMC){
 	 for(int k = 0; k<mcparts->getRows();k++){
