@@ -42,6 +42,7 @@ def mix_from_singles(df, binvars=''.split(), nbins=1,maxEvents=None, nAssocPerTr
     df['h_z'] = df.z
     
     Q2 = df['Q2']
+    h_p = df['h_p']
     #try:
     N = len(df)
     if maxEvents != None:
@@ -73,6 +74,8 @@ def mix_from_singles(df, binvars=''.split(), nbins=1,maxEvents=None, nAssocPerTr
         #print("checking ", i, j)
         if Q2[i] == Q2[j] or Q2[i] == 0 or Q2[j] == 0 or h_pid[i] == 0 or h_pid[j] == 0: #don't mix with the same event
             return False
+        if h_p[i] < h_p[j]:
+            return False
         for var in binvars:
             good = False
             xi = df[var][i]
@@ -93,13 +96,13 @@ def mix_from_singles(df, binvars=''.split(), nbins=1,maxEvents=None, nAssocPerTr
     j = j0
     for i in range(N):
         
-        if i % 100000 == 0:
+        if i % 10000 == 0:
             duration = time.perf_counter()-start
             print("%.1f"%(i/N*100),"% complete, time so far: ",duration//3600,"hours", 
                   (duration//60)%60, "minutes", int(duration % 60), "seconds")
         
         found_mix= 0
-        if df['h_z'][i] < 0.5:# or abs(df['h_pid'][i])!= 211:
+        if df['h_z'][i] < 0.4 or abs(df['h_pid'][i])!= 211:
             continue
         #print('check1')
         for ii in range(nAssocPerTrigger):
@@ -168,33 +171,44 @@ def mix_from_singles(df, binvars=''.split(), nbins=1,maxEvents=None, nAssocPerTr
 if __name__ == '__main__':
     infile = sys.argv[1]
     outfile=sys.argv[2]
-    df = uproot3.open(infile)['hadrons'].pandas.df()
-
+    if ".root" in infile:
+        df = uproot3.open(infile)['hadrons'].pandas.df()
+    if ".pkl" in infile:
+        df = pd.read_pickle(infile)
+        
     maxEvents = None
     nAssocPerTrigger=1
     j0=0
+    singleThread=False
     for arg in sys.argv[2:]:
         if '-N=' in arg:
             maxEvents=int(arg[3:])
         elif '-n=' in arg:
             nAssocPerTrigger=int(arg[3:])
-
-    def process(j0):
+        elif arg == '-s':
+            singleThread=True
+    def process(j0,i):
         df_mixed = mix_from_singles(df, binvars=''.split(), nbins=1,maxEvents=maxEvents, nAssocPerTrigger=1,j0=j0)
-        filei=outfile +("%s.pkl"%j0)                                                   
+        filei=outfile +("%s.pkl"%i)                                                   
         pd.to_pickle(df_mixed,filei)
         print("wrote to file "+filei)
     
     processes = []
-    for j0 in range(0,10):
-        p = multiprocessing.Process(target=process, args=(j0,))
-        processes.append(p)
-        p.start()
-        
-    for process in processes:
-        process.join()
-        
+    if not singleThread:
+        for i in range(0,10):
+            j0 = i*500
+            if not singleThread:
+                p = multiprocessing.Process(target=process, args=(j0,i))
+                processes.append(p)
+                p.start()
+        for process in processes:
+            process.join()
 
+    else :
+        df_mixed = mix_from_singles(df, binvars=''.split(), nbins=1,maxEvents=maxEvents, nAssocPerTrigger=nAssocPerTrigger)
+        filei=outfile
+        pd.to_pickle(df_mixed,filei)
+        print("wrote to file "+filei)
     
 '''    import threading
     class myThread (threading.Thread):
