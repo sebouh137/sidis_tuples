@@ -1,6 +1,8 @@
-import sys,pandas as pd, matplotlib , matplotlib.pyplot as plt, matplotlib.lines , numpy as np,cupy as cp, math, pylab, uproot3,time, multiprocessing
+import sys,pandas as pd, matplotlib , matplotlib.pyplot as plt, matplotlib.lines , numpy as np, math, pylab,time, multiprocessing
 
 import ROOT
+#import uproot
+import root_pandas
 masses = {211: 0.13957018, -211: 0.13957018, 321: 0.493677, -321: 0.493677, 2212: 0.93827208816, -2212: 0.93827208816}
 def mixed_quantities(E, e_px, e_py, e_pz, h_px, h_py, h_pz,h_pid, h2_px, h2_py, h2_pz,h2_pid):
     beam = ROOT.TLorentzVector()
@@ -171,8 +173,11 @@ def mix_from_singles(df, binvars=''.split(), nbins=1,maxEvents=None, nAssocPerTr
 if __name__ == '__main__':
     infile = sys.argv[1]
     outfile=sys.argv[2]
+    print("infile is", infile, ";  outfile is", outfile)
     if ".root" in infile:
-        df = uproot3.open(infile)['hadrons'].pandas.df()
+        df = root_pandas.read_root(infile,'hadrons')
+        print("opened file ", infile, ";  type(df) is ", type(df))
+        #df = root_pandas.read_root(infile,'hadrons')
     if ".pkl" in infile:
         df = pd.read_pickle(infile)
         
@@ -206,9 +211,9 @@ if __name__ == '__main__':
 
     else :
         df_mixed = mix_from_singles(df, binvars=''.split(), nbins=1,maxEvents=maxEvents, nAssocPerTrigger=nAssocPerTrigger)
-        filei=outfile
-        pd.to_pickle(df_mixed,filei)
-        print("wrote to file "+filei)
+        df_mixed.to_root(outfile,key='dihadrons')
+        
+        
     
 '''    import threading
     class myThread (threading.Thread):
