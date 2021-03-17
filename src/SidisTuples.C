@@ -67,8 +67,15 @@ bool pcalOK(clas12::region_part_ptr p){
 //list of cuts
 double cut_ECfracmin = 0.17;
 double cut_pcalmin = 0.07;
-double cut_evzmin =  -13; // inbending    -8;//-13;
-double cut_evzmax =  12;  // inbending     1;//12;
+double cut_evzmin_inb =  -13; // inbending    -8;//-13;
+double cut_evzmax_inb =  12;  // inbending     1;//12;
+
+double cut_evzmin_outb = -18;
+double cut_evzmax_outb = 10;
+
+double cut_evzmin = cut_evzmin_inb;
+double cut_evzmax = cut_evzmin_inb;
+
 
 //double cut_Wmin  = 2;
 double cut_Q2min = 1;
@@ -80,7 +87,11 @@ double cut_dvzmax = 20; //5;//20;
 
 double cut_dtime_corr = 0.3;
 
-double cut_chi2pidmin = -2.5, cut_chi2pidmax = 2.5;
+//double cut_chi2pidmin = -2.5, cut_chi2pidmax = 2.5;
+
+//maximum chi2pid difference for non-pions.  
+//double cut_chi2pidmax_other = 3.0;
+
 
 double cut_HTCCmin = 2;
 
@@ -352,6 +363,21 @@ leaf(pair_pt_cm);leaf(pair_phi_cm); leaf(pair_pt);leaf(pair_phi);
        clas12::rcdb_reader *rcdb = c12.rcdb();
        auto& current = rcdb->current();
        E = current.beam_energy/1000;
+       
+       double torus_curr = current.torus_current;
+       double torus_scale = current.torus_scale;
+       if(torus_scale <0){
+	 cut_evzmin = cut_evzmin_inb;
+	 cut_evzmax = cut_evzmax_inb;
+       } else {
+
+	 cut_evzmin = cut_evzmin_outb;
+	 cut_evzmax = cut_evzmax_outb;
+	 cout << cut_evzmin << " " << cut_evzmax <<  endl;
+       }
+
+
+       cout << "torus current, scale = " << torus_curr << " " << torus_scale << endl;
        TString targetName(rcdb->current().target);
        cout << "target is " << targetName << "." << endl;
        std::cout << "beam energy is " << E << std::endl;
@@ -744,9 +770,18 @@ leaf(pair_pt_cm);leaf(pair_phi_cm); leaf(pair_pt);leaf(pair_phi);
 	     //h_pid = h->par()->getPid();
 	     h_chi2pid = h->par()->getChi2Pid();
 	     //if(debug) cout << "chi2pid" << endl;
-	     if(abs(h_chi2pid) > cut_chi2pidmax)
+	     //if(abs(h_chi2pid) > cut_chi2pidmax)
+	     //continue;
+	     
+	     //scaling constant for pid cut
+	     double C = .88*(h_pid == 211)+.93*(h_pid == -211)+ 1.30*(abs(h_pid)==2212)+1.0*(abs(h_pid) != 211 && abs(h_pid)!=2212);
+	     if(abs(h_chi2pid) >3*C)
 	       continue;
 	     
+	     //tighter cut for pions
+	     if(abs(h_pid) == 211 && h2_p>2.44 && h_chi2pid <-(0.00869+14.98587*exp(-h_p/1.18236)+1.81751*exp(-h_p/4.86394))*C)
+	       continue;
+
 	     dvz = electrons[i]->par()->getVz()-h->par()->getVz();
 	     
 	     if(dvz < cut_dvzmin || dvz > cut_dvzmax)
@@ -944,8 +979,16 @@ leaf(pair_pt_cm);leaf(pair_phi_cm); leaf(pair_pt);leaf(pair_phi);
                  if(abs(dtime_corr) > cut_dtime_corr)
                    continue;
                  h2_chi2pid = h2->par()->getChi2Pid();
-                 if(useCuts && abs(h2_chi2pid) > cut_chi2pidmax)
-                   continue;
+
+		 //scaling factor for chi2pid cuts
+		 double C = .88*(h2_pid == 211)+.93*(h2_pid == -211)+ 1.30*(abs(h2_pid)==2212)+1.0*(abs(h2_pid) != 211 && abs(h2_pid)!=2212);
+		 if(abs(h2_chi2pid) >3*C)
+		   continue;
+		 //tighter cut for pions
+		 if(abs(h2_pid) == 211 && h2_p>2.44 && h2_chi2pid <-(0.00869+14.98587*exp(-h2_p/1.18236)+1.81751*exp(-h2_p/4.86394))*C)
+		   continue;
+                 //if(useCuts && abs(h2_chi2pid) > cut_chi2pidmax)
+                 //  continue;
 
                  dvz = electrons[i]->par()->getVz()-h2->par()->getVz();
 
