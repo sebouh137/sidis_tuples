@@ -95,6 +95,10 @@ double cut_dtime_corr = 0.3;
 
 double cut_HTCCmin = 2;
 
+double sf1[7], sf2[7], sf3[7], sf4[7];
+double sfs1[7], sfs2[7], sfs3[7], sfs4[7];
+
+
 //double cut_zmin = 0.3;
 
 void toCM(TLorentzVector cm, TLorentzVector p,TLorentzVector& result){
@@ -199,6 +203,7 @@ void SidisTuples(){
    clas12::clas12databases *dbc12;
    if(!isMC){
      clas12::clas12databases::SetRCDBRemoteConnection();
+     clas12::clas12databases::SetCCDBRemoteConnection();
      if(!qadbPath.EqualTo("")){
        cout << "setting qadb connection" <<endl;
        clas12::clas12databases::SetQADBConnection((const std::string)qadbPath);
@@ -226,7 +231,7 @@ void SidisTuples(){
    leaf(nu);leaf(Q2);leaf(x);leaf(y);leaf(W);
    leaf(e_DC1x);leaf(e_DC2x);leaf(e_DC3x);leaf(e_DC1y);leaf(e_DC2y);leaf(e_DC3y);
    leaf(e_PCALx);leaf(e_PCALy);
-   leaf(e_ecalfrac);leaf(e_pcal);
+   leaf(e_ecalfrac);leaf(e_pcal); leaf(e_ecalin); leaf(e_ecalout);
    leaf(e_vz);
    leaf(npip);leaf(npim);
    leaf(npp);leaf(npm);
@@ -361,9 +366,12 @@ leaf(pair_pt_cm);leaf(pair_phi_cm); leaf(pair_pt);leaf(pair_phi);
 	 c12.applyQA();
        }
        clas12::rcdb_reader *rcdb = c12.rcdb();
+
        auto& current = rcdb->current();
        E = current.beam_energy/1000;
        
+       clas12::ccdb_reader *ccdb = c12.ccdb();
+
        double torus_curr = current.torus_current;
        double torus_scale = current.torus_scale;
        if(torus_scale <0){
@@ -382,6 +390,20 @@ leaf(pair_pt_cm);leaf(pair_phi_cm); leaf(pair_pt);leaf(pair_phi);
        cout << "target is " << targetName << "." << endl;
        std::cout << "beam energy is " << E << std::endl;
        rcdb->close();
+       const TableOfDoubles_t& electron_sf = ccdb->requestTableDoubles("/calibration/eb/electron_sf");
+       
+       
+       for(int row = 0; row<=6; row++){
+	 sf1[row] = electron_sf[row][3];
+	 sf2[row] = electron_sf[row][4];
+         sf3[row] = electron_sf[row][5];
+         sf4[row] = electron_sf[row][6];
+         sfs1[row] = electron_sf[row][7];
+         sfs2[row] = electron_sf[row][8];
+         sfs3[row] = electron_sf[row][9];
+         sfs4[row] = electron_sf[row][10];
+       }
+       ccdb->close();
      } else{
        E=0; //get the beam energy later
      }
@@ -547,6 +569,8 @@ leaf(pair_pt_cm);leaf(pair_phi_cm); leaf(pair_pt);leaf(pair_phi);
 	 if(debug) cout << "starting electron loop" << endl;
 	 //if(debug) cout << "CHECK 0.5" << endl;
 	 //if(electrons.size()>1) continue;
+	 int sector = electrons[i]->getSector();
+	 
 	 e_DC1x=electrons[i]->traj(DC,DC1)->getX();
 	 e_DC1y=electrons[i]->traj(DC,DC1)->getY();
 	 e_DC2x=electrons[i]->traj(DC,DC2)->getX();
@@ -585,12 +609,28 @@ leaf(pair_pt_cm);leaf(pair_phi_cm); leaf(pair_pt);leaf(pair_phi);
 	 e_PCALx = electrons[i]->cal(PCAL)->getX();
 	 e_PCALy = electrons[i]->cal(PCAL)->getY();	
 
-	 if(useCuts && e_ecalfrac<cut_ECfracmin)
+	 //double sf1 = 0, sf2 = 0, sf3 = 0, sf4 = 0;
+	 //double sfs1 =0, sfs2=0, sfs3 = 0, sfs4 = 0;
+
+	 //cout << sector << " " << sf1[sector] << " " <<sf2[sector] << " " <<sf3[sector] <<endl; 
+	 
+	 //ecal fraction
+	 double ecalfrac_mu = sf1[sector]*(sf2[sector]+sf3[sector]/ecal+sf4[sector]/pow(ecal,2));
+	 double ecalfrac_sigma = sfs1[sector]*(sfs2[sector]+sfs3[sector]/ecal+sfs4[sector]/pow(ecal,2));
+	 double nsig = 3.5;
+	 if(e_ecalfrac>ecalfrac_mu+nsig*ecalfrac_sigma || e_ecalfrac<ecalfrac_mu-nsig*ecalfrac_sigma)
 	   continue;
 
 	 if(e_pcal<cut_pcalmin)
 	   continue;
+	 e_ecalin = electrons[i]->cal(ECIN)->getEnergy();
+	 e_ecalout = electrons[i]->cal(ECOUT)->getEnergy();
+	 cout << e_ecalin << " " << e_ecalout << " " << e_p << " " << e_pcal << endl;  
+	 //->cal(ECOUT)->getEnergy(); 
 	 
+	 //further cut to remove pions
+	 if(e_p> 4.5 && e_ecalin/e_p < 0.2 - e_pcal/e_p)
+	   continue;
 	 //if(debug) cout << "/electron"<<endl;
 	 
 	 e_vz = electrons[i]->par()->getVz();
