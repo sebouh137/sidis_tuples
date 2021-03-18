@@ -54,14 +54,17 @@ bool dcOK(clas12::region_part_ptr p){
 }
 
 bool pcalOK(clas12::region_part_ptr p){
-  double x = p->cal(PCAL)->getX();
+   
+  //cout << p->cal(PCAL)->getLv() << " " <<  p->cal(PCAL)->getLw() << " " <<  p->cal(PCAL)->getDv() << " " <<  p->cal(PCAL)->getDw() << " " <<  endl;
+  return p->cal(PCAL)->getLv()>9.0 && p->cal(PCAL)->getLw()>9.0;
+  /*double x = p->cal(PCAL)->getX();
   double y = p->cal(PCAL)->getY();
 
   double cutPCAL = 25; //in between sectors
   if (abs(x)<cutPCAL || abs(c30*y+s30*x)<cutPCAL || abs(c30*y-s30*x)<cutPCAL)
     return false;
   //cout << "pcal ok" <<endl;
-  return true;
+  return true;*/
 }
 
 //list of cuts
@@ -625,7 +628,7 @@ leaf(pair_pt_cm);leaf(pair_phi_cm); leaf(pair_pt);leaf(pair_phi);
 	   continue;
 	 e_ecalin = electrons[i]->cal(ECIN)->getEnergy();
 	 e_ecalout = electrons[i]->cal(ECOUT)->getEnergy();
-	 cout << e_ecalin << " " << e_ecalout << " " << e_p << " " << e_pcal << endl;  
+	 //cout << e_ecalin << " " << e_ecalout << " " << e_p << " " << e_pcal << endl;  
 	 //->cal(ECOUT)->getEnergy(); 
 	 
 	 //further cut to remove pions
