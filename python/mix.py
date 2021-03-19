@@ -3,6 +3,10 @@ import sys,pandas as pd, matplotlib , matplotlib.pyplot as plt, matplotlib.lines
 import ROOT
 #import uproot
 import root_pandas
+
+
+
+
 masses = {211: 0.13957018, -211: 0.13957018, 321: 0.493677, -321: 0.493677, 2212: 0.93827208816, -2212: 0.93827208816}
 def mixed_quantities(E, e_px, e_py, e_pz, h_px, h_py, h_pz,h_pid, h2_px, h2_py, h2_pz,h2_pid):
     beam = ROOT.TLorentzVector()
@@ -39,12 +43,24 @@ def mixed_quantities(E, e_px, e_py, e_pz, h_px, h_py, h_pz,h_pid, h2_px, h2_py, 
     
 
 #new version
-def mix_from_singles(df, binvars=''.split(), nbins=1,maxEvents=None, nAssocPerTrigger=1,j0=0):
+def mix_from_singles(df, binvars=''.split(), nbins=1,maxEvents=None, nAssocPerTrigger=1,j0=0,electronCuts=False):
+    print("debug1:  ", electronCuts)
     start = time.perf_counter()
     df['h_z'] = df.z
+
+    df['q_th'] = df.eval("arctan(e_p*sin(e_th)/(E-e_p*cos(e_th)))")
+    q_th = df['q_th']
     
     Q2 = df['Q2']
+    x = df['x']
     h_p = df['h_p']
+
+    h_E = df.z*df.nu #I should have included this in the tuple maker, but whatever
+
+    e_p = df['e_p']
+    e_th = df['e_th']
+    e_ph = df['e_ph']
+
     #try:
     N = len(df)
     if maxEvents != None:
@@ -55,6 +71,8 @@ def mix_from_singles(df, binvars=''.split(), nbins=1,maxEvents=None, nAssocPerTr
         partitions[var] = [df[var].quantile(i/3) for i in range(nbins+1)]
     df_out = pd.DataFrame()
     
+    electron_fields = 'E helicity e_p e_th e_ph e_px e_py e_pz nu Q2 x y W q_th'.split()
+
     fields = []
     
     d = {}
@@ -65,19 +83,45 @@ def mix_from_singles(df, binvars=''.split(), nbins=1,maxEvents=None, nAssocPerTr
             d["h2_" + name[2:]] = []
         else :
             d[name] = []
+        #create an entry for the mixed associated event's electron
+        if name in electron_fields:
+            d["mixevt_" + name] = []
         
+    d['mixevt_nskipped'] = []
     
     d['diff_phi_cm'] = []
     d['diff_phi_lab'] = []
     d['diff_rap_cm'] = []
     d['diff_eta_cm'] = []
     
-    def same_bin(i,j):
+    def same_bin(i,j,electronCuts=False):
+        #print("debug2:  ", electronCuts)
         #print("checking ", i, j)
         if Q2[i] == Q2[j] or Q2[i] == 0 or Q2[j] == 0 or h_pid[i] == 0 or h_pid[j] == 0: #don't mix with the same event
             return False
-        if h_p[i] < h_p[j]:
+        if h_E[i] < h_E[j]:
             return False
+        if electronCuts:
+            #if abs(e_p[i]-e_p[j])/((e_p[i]+e_p[j])/2)>.3:
+            #if abs(Q2[i]-Q2[j])/((Q2[i]+Q2[j])/2)>.4:
+            #    return False
+            if abs(x[i]-x[j])>.1:
+                return False
+            dph = e_ph[i] - e_ph[j]
+            dph += 2*np.pi*(dph<-np.pi)-2*np.pi*(dph>np.pi)
+            dth = q_th[i] - q_th[j]
+            th = (q_th[i]+q_th[j])/2
+            if np.hypot(dth,dph*np.sin(th))>3*np.pi/180:
+                return False
+            #if abs(dph) > 30*np.pi/180:
+            #    #print("skipping due to phi mismatch")
+            #    return False
+            
+            #dth = e_th[i] - e_th[j]
+            #if abs(dth)> 10*np.pi/180:
+                #print("skipping due to theta mismatch")
+            #    return False
+
         for var in binvars:
             good = False
             xi = df[var][i]
@@ -98,30 +142,32 @@ def mix_from_singles(df, binvars=''.split(), nbins=1,maxEvents=None, nAssocPerTr
     j = j0
     for i in range(N):
         
-        if i % 10000 == 0:
+        if i % 1000 == 0:
             duration = time.perf_counter()-start
             print("%.1f"%(i/N*100),"% complete, time so far: ",duration//3600,"hours", 
                   (duration//60)%60, "minutes", int(duration % 60), "seconds")
         
-        found_mix= 0
+
         if df['h_z'][i] < 0.4 or abs(df['h_pid'][i])!= 211:
             continue
         #print('check1')
         for ii in range(nAssocPerTrigger):
-            for k in range(100):
+            found_mix = 0
+            for k in range(2000):
                 #print("check2")
                 j += 1
                 if j >= N:
                     j = 0
                 #if df['h_z'][j] > df['h_z'][i]:
                 #    continue;
-                if same_bin(i,j):
+                if same_bin(i,j,electronCuts=electronCuts):
                     found_mix = k+1
                     break
             
             #print("check3")
             if found_mix == 0:
                 continue
+
             #print("check4")
             for name in fields:
                 if name[:2] == 'h_':
@@ -145,6 +191,8 @@ def mix_from_singles(df, binvars=''.split(), nbins=1,maxEvents=None, nAssocPerTr
             #d["h2_cm_pt"].append(pt)
             #d["h2_cm_rap"].append(rap)
             #d["h2_cm_ph"].append(phi)
+        
+
             d["h2_z"].append(df.h_z[j]*df.nu[j]/df.nu[i])
             
             d['diff_phi_cm'].append(df.h_cm_ph[i]-di['h2_cm_ph'] 
@@ -153,10 +201,10 @@ def mix_from_singles(df, binvars=''.split(), nbins=1,maxEvents=None, nAssocPerTr
 
             d['diff_rap_cm'].append(df.h_cm_rap[i]-di['h2_cm_rap'])
             #d['diff_eta_cm'].append(df.h_cm_eta[i]-df.h_cm_eta[j])
-
+            for name in electron_fields:
+                 d["mixevt_" + name].append(df[name][j])
         
-
-    
+            d['mixevt_nskipped'].append(found_mix-1)
     
     duration = time.perf_counter()-start
     print("total time: ",duration//3600,"hours", (duration//60)%60, "minutes", int(duration % 60), "seconds")
@@ -168,6 +216,11 @@ def mix_from_singles(df, binvars=''.split(), nbins=1,maxEvents=None, nAssocPerTr
             del d[key]
     ret = pd.DataFrame.from_dict(d)
     ret['diff_phi_lab'] = ret.h1_ph - ret.h2_ph + 2*np.pi*(ret.h1_ph-ret.h2_ph<-np.pi)-2*np.pi*(ret.h1_ph-ret.h2_ph>np.pi)
+    
+    ret['mixevt_diff_e_p'] = ret.e_p-ret.mixevt_e_p
+    ret['mixevt_diff_e_ph'] = ret.e_ph-ret.mixevt_e_ph + 2*np.pi*(ret.e_ph-ret.mixevt_e_ph<-np.pi)-2*np.pi*(ret.e_ph-ret.mixevt_e_ph>np.pi)
+    ret['mixevt_diff_e_th'] = ret.e_th-ret.mixevt_e_th
+
     return ret
 
 if __name__ == '__main__':
@@ -185,6 +238,7 @@ if __name__ == '__main__':
     nAssocPerTrigger=1
     j0=0
     singleThread=False
+    electronCuts=False
     for arg in sys.argv[2:]:
         if '-N=' in arg:
             maxEvents=int(arg[3:])
@@ -192,8 +246,11 @@ if __name__ == '__main__':
             nAssocPerTrigger=int(arg[3:])
         elif arg == '-s':
             singleThread=True
+        elif arg == '-e':
+            electronCuts=True
+            print("use electron cuts")
     def process(j0,i):
-        df_mixed = mix_from_singles(df, binvars=''.split(), nbins=1,maxEvents=maxEvents, nAssocPerTrigger=1,j0=j0)
+        df_mixed = mix_from_singles(df, binvars=''.split(), nbins=1,maxEvents=maxEvents, nAssocPerTrigger=1,j0=j0,electronCuts=electronCuts)
         filei=outfile +("%s.pkl"%i)                                                   
         pd.to_pickle(df_mixed,filei)
         print("wrote to file "+filei)
@@ -210,7 +267,7 @@ if __name__ == '__main__':
             process.join()
 
     else :
-        df_mixed = mix_from_singles(df, binvars=''.split(), nbins=1,maxEvents=maxEvents, nAssocPerTrigger=nAssocPerTrigger)
+        df_mixed = mix_from_singles(df, binvars=''.split(), nbins=1,maxEvents=maxEvents, nAssocPerTrigger=nAssocPerTrigger,electronCuts=electronCuts)
         df_mixed.to_root(outfile,key='dihadrons')
         
         

@@ -18,8 +18,12 @@
 #include <TLeaf.h>
 #include "clas12reader.h"
 #include "helonline.h"
-//#include "Math/Vector4Dfwd.h"
+#include "DCfiducialcuts.h"
+
 using namespace clas12;
+
+
+const int INBEND=1, OUTBEND=0;
 
 int debug = 0;
 double defval = 0;
@@ -34,7 +38,7 @@ void SetLorentzVector(TLorentzVector &p4, clas12::region_part_ptr rp, double mas
 
 double s30 = sin(TMath::Pi()/6);
 double c30 = cos(TMath::Pi()/6);
-bool dcOK(clas12::region_part_ptr p){
+/*bool dcOK(clas12::region_part_ptr p){
   double x1 = p->traj(DC,DC1)->getX();
   double y1 = p->traj(DC,DC1)->getY();
   double x3 = p->traj(DC,DC3)->getX();
@@ -51,7 +55,7 @@ bool dcOK(clas12::region_part_ptr p){
     return false;
   //  cout << "passed" << endl;
   return true;
-}
+ }*/
 
 bool pcalOK(clas12::region_part_ptr p){
    
@@ -132,7 +136,7 @@ void SidisTuples(){
 
   /////////////////////////////////////
   //ignore this just getting file name!
-
+  int torus;
    TString outputFile;
    TChain input("hipo");
    int skipEvents=0;
@@ -378,10 +382,11 @@ leaf(pair_pt_cm);leaf(pair_phi_cm); leaf(pair_pt);leaf(pair_phi);
        double torus_curr = current.torus_current;
        double torus_scale = current.torus_scale;
        if(torus_scale <0){
+	 torus=INBEND;
 	 cut_evzmin = cut_evzmin_inb;
 	 cut_evzmax = cut_evzmax_inb;
        } else {
-
+	 torus=OUTBEND;
 	 cut_evzmin = cut_evzmin_outb;
 	 cut_evzmax = cut_evzmax_outb;
 	 cout << cut_evzmin << " " << cut_evzmax <<  endl;
@@ -576,11 +581,11 @@ leaf(pair_pt_cm);leaf(pair_phi_cm); leaf(pair_pt);leaf(pair_phi);
 	 
 	 e_DC1x=electrons[i]->traj(DC,DC1)->getX();
 	 e_DC1y=electrons[i]->traj(DC,DC1)->getY();
-	 e_DC2x=electrons[i]->traj(DC,DC2)->getX();
-	 e_DC2y=electrons[i]->traj(DC,DC2)->getY();
-	 e_DC3x=electrons[i]->traj(DC,DC3)->getX();
-	 e_DC3y=electrons[i]->traj(DC,DC3)->getY();
-	 if(!dcOK(electrons[i]) || !pcalOK(electrons[i]))
+	 e_DC2x=electrons[i]->traj(DC,DC3)->getX();
+	 e_DC2y=electrons[i]->traj(DC,DC3)->getY();
+	 e_DC3x=electrons[i]->traj(DC,DC6)->getX();
+	 e_DC3y=electrons[i]->traj(DC,DC6)->getY();
+	 if(!dcOK(electrons[i],torus) || !pcalOK(electrons[i]))
 	   continue;
 	 //if(debug) cout << "dc and pcal ok"<<endl;
 	 //if(!dcok)
@@ -780,15 +785,15 @@ leaf(pair_pt_cm);leaf(pair_phi_cm); leaf(pair_pt);leaf(pair_phi);
 	       continue;
 	     h_DC1x=h->traj(DC,DC1)->getX();
 	     h_DC1y=h->traj(DC,DC1)->getY();
-	     h_DC2x=h->traj(DC,DC2)->getX();
-	     h_DC2y=h->traj(DC,DC2)->getY();
-	     h_DC3x=h->traj(DC,DC3)->getX();
-	     h_DC3y=h->traj(DC,DC3)->getY();
+	     h_DC2x=h->traj(DC,DC3)->getX();
+	     h_DC2y=h->traj(DC,DC3)->getY();
+	     h_DC3x=h->traj(DC,DC6)->getX();
+	     h_DC3y=h->traj(DC,DC6)->getY();
 	     
 	     dtime = electrons[i]->getTime()-h->getTime();
 	     
 	     //if(debug) cout << "dc"<<endl;
-	     if(!dcOK(h))
+	     if(!dcOK(h,torus))
 	       continue;
 	     
 	     //bool dcok = fillHistsDC(pips[j],hpipdc1xy,hpipdc2xy,hpipdc3xy);
@@ -1013,7 +1018,7 @@ leaf(pair_pt_cm);leaf(pair_phi_cm); leaf(pair_pt);leaf(pair_phi);
 
 		 dtime = electrons[i]->getTime()-h2->getTime();
 		 
-                 if(!dcOK(h2))
+                 if(!dcOK(h2,torus))
                    continue;
                  double mass = db->GetParticle(h2_pid)->Mass();
                  SetLorentzVector(had2,h2, mass);
