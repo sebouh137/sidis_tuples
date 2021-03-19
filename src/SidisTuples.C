@@ -263,7 +263,7 @@ void SidisTuples(){
    leafx(nelectrons);
    leafx(E);leafx(helicity);leafx(e_p);leafx(e_th);leafx(e_ph);leafx(e_px);leafx(e_py);leafx(e_pz);
    leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W);leafx(ntracks);leafx(nhtracks);
- leaf(h_chi2pid);leaf(h_pid);leaf(h_p);leaf(h_th);leaf(h_ph);leaf(h_px);leaf(h_py);leaf(h_pz);leaf(h_DC1x);leaf(h_DC1y);leaf(h_DC2x);leaf(h_DC2y);leaf(h_DC3x);leaf(h_DC3y);leaf(dvz);leaf(z); leaf(h_cm_p);leaf(h_cm_th);leaf(h_cm_ph);leaf(h_cm_eta);leaf(h_cm_rap);leaf(h_cm_pt); leaf(h_eta); leaf(dtime); leaf(dtime_corr); leaf(missing_mass);
+   leaf(h_chi2pid);leaf(h_pid);leaf(h_p);leaf(h_th);leaf(h_ph);leaf(h_px);leaf(h_py);leaf(h_pz);leaf(h_DC1x);leaf(h_DC1y);leaf(h_DC2x);leaf(h_DC2y);leaf(h_DC3x);leaf(h_DC3y);leaf(dvz);leaf(z); leaf(h_cm_p);leaf(h_cm_th);leaf(h_cm_ph);leaf(h_cm_eta);leaf(h_cm_rap);leaf(h_cm_pt);leaf(h_cm_zeta); leaf(h_eta); leaf(dtime); leaf(dtime_corr); leaf(missing_mass);
 
    
    if(!isMC) tree = NULL;
@@ -276,7 +276,7 @@ void SidisTuples(){
    leafx(E);leafx(helicity);leafx(e_p);leafx(e_th);leafx(e_ph);leafx(e_px);leafx(e_py);leafx(e_pz);leafx(nu);leafx(Q2);leafx(x);leafx(y);leafx(W); leafx(ntracks); leafx(nhtracks); leaf(diff_phi_cm_mix);leaf(diff_eta_cm_mix);leaf(diff_rap_cm_mix);leaf(h2_assoc_index);
 
 leaf(pair_pt_cm);leaf(pair_phi_cm); leaf(pair_pt);leaf(pair_phi);
-   
+ 
 
    // macro creates fields for two hadrons
 #define leaf2(name) double h1_##name=0; double h2_##name=0; if(tree != NULL) {tree->Branch((TString)"h1_"+#name,&h1_##name,(TString)"h1_"+#name+(TString)"/D"); tree->Branch((TString)"h2_"+#name,&h2_##name,(TString)"h2_"+#name+(TString)"/D");}
@@ -289,7 +289,7 @@ leaf(pair_pt_cm);leaf(pair_phi_cm); leaf(pair_pt);leaf(pair_phi);
    leaf(diff_phi_cm);
    leaf(diff_eta_cm);
    leaf(diff_rap_cm);
-
+   leaf2(cm_zeta);
 
    
    if(!isMC) tree = NULL;
@@ -665,7 +665,9 @@ leaf(pair_pt_cm);leaf(pair_phi_cm); leaf(pair_pt);leaf(pair_phi);
            continue;
 	 
 	 cm = beam+target-el;
-
+	 
+	 TLorentzVector target_cm;
+	 toCM(cm, target,target_cm);
 	 //check that the cm outgoing electron has phi=0
 	 //TLorentzVector tmp;
 	 //toCM(cm, el,tmp);
@@ -845,6 +847,7 @@ leaf(pair_pt_cm);leaf(pair_phi_cm); leaf(pair_pt);leaf(pair_phi);
 	     h_cm_rap = h_cm.Rapidity();
 	     h_cm_ph = h_cm.Phi();
 	     h_cm_pt = h_cm.Pt();
+	     h_cm_zeta = h_cm.E()/target_cm.E();
 	     //if(debug) cout << h_cm_p << " " << pi_cm_th << " " << pi_cm_ph << endl;
 	     
 	     TLorentzVector h_truth;
@@ -938,6 +941,7 @@ leaf(pair_pt_cm);leaf(pair_phi_cm); leaf(pair_pt);leaf(pair_phi);
 	       h1_cm_eta = h_cm_eta;
 	       h1_cm_rap = h_cm_rap;
 	       h1_cm_pt = h_cm_pt;
+	       h1_cm_zeta = h_cm_zeta;
 	       h1_z = z;
 	       h1 = had;
 	       if(isMC){
@@ -991,6 +995,7 @@ leaf(pair_pt_cm);leaf(pair_phi_cm); leaf(pair_pt);leaf(pair_phi);
 		 h2_cm_ph = had2_cm.Phi();
 		 h2_cm_eta = had2_cm.Eta();
 		 h2_cm_rap = had2_cm.Rapidity();
+		 h2_cm_zeta = had2_cm.E()/target_cm.M();
 		 h2_pid = pid;
 		 diff_phi_cm = angle(h1_cm_ph-h2_cm_ph);
 		 diff_eta_cm = h1_cm_eta-h2_cm_eta;

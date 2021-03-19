@@ -38,6 +38,10 @@ def mixed_quantities(E, e_px, e_py, e_pz, h_px, h_py, h_pz,h_pid, h2_px, h2_py, 
     di['h2_cm_rap'] = hadron2.Rapidity()
     di['h2_cm_ph'] = hadron2.Phi()
     
+    target.RotateZ(-cm.Phi());
+    target.RotateY(-cm.Theta());
+    target.Boost(0,0,-cm.Beta());
+    di['h2_cm_zeta'] = hadron2.E()/target.E()
     
     return di
     
