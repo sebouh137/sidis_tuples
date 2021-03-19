@@ -92,7 +92,8 @@ double cut_ymax  = 0.85;
 double cut_dvzmin = -20; //-5;//-20;
 double cut_dvzmax = 20; //5;//20;
 
-double cut_dtime_corr = 0.3;
+//removed this cut
+double cut_dtime_corr = 100;//0.3;
 
 //double cut_chi2pidmin = -2.5, cut_chi2pidmax = 2.5;
 
