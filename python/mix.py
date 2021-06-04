@@ -47,11 +47,23 @@ def mixed_quantities(E, e_px, e_py, e_pz, h_px, h_py, h_pz,h_pid, h2_px, h2_py, 
     
 
 #new version
-def mix_from_singles(df, binvars=''.split(), nbins=1,maxEvents=None, nAssocPerTrigger=1,j0=0,electronCuts=False):
+def mix_from_singles(df, binvars=''.split(), nbins=1,maxEvents=None, nAssocPerTrigger=1,j0=0,electronCuts=False,maxDiffAngle=2,maxDiffX=.05):
     print("debug1:  ", electronCuts)
     start = time.perf_counter()
-    df['h_z'] = df.z
+    if 'z' in df.columns:
+        df['h_z'] = df.z
+    if 'h_z' in df.columns:
+        df['z'] = df.h_z
 
+    if not 'e_px' in df.columns:
+        df.eval('e_px=e_p*sin(e_th)*cos(e_ph)',inplace=True)
+        df.eval('e_py=e_p*sin(e_th)*sin(e_ph)',inplace=True)
+        df.eval('e_pz=e_p*cos(e_th)',inplace=True)
+        df.eval('y=(E-e_p)/E',inplace=True)
+    if not 'h_px' in df.columns:
+        df.eval('h_px=h_p*sin(h_th)*cos(h_ph)',inplace=True)
+        df.eval('h_py=h_p*sin(h_th)*sin(h_ph)',inplace=True)
+        df.eval('h_pz=h_p*cos(h_th)',inplace=True)
     df['q_th'] = df.eval("arctan(e_p*sin(e_th)/(E-e_p*cos(e_th)))")
     q_th = df['q_th']
     
@@ -75,7 +87,7 @@ def mix_from_singles(df, binvars=''.split(), nbins=1,maxEvents=None, nAssocPerTr
         partitions[var] = [df[var].quantile(i/3) for i in range(nbins+1)]
     df_out = pd.DataFrame()
     
-    electron_fields = 'E helicity e_p e_th e_ph e_px e_py e_pz nu Q2 x y W q_th'.split()
+    electron_fields = 'E e_p e_th e_ph e_px e_py e_pz nu Q2 x y W q_th'.split()
 
     fields = []
     
@@ -109,13 +121,13 @@ def mix_from_singles(df, binvars=''.split(), nbins=1,maxEvents=None, nAssocPerTr
             #if abs(e_p[i]-e_p[j])/((e_p[i]+e_p[j])/2)>.3:
             #if abs(Q2[i]-Q2[j])/((Q2[i]+Q2[j])/2)>.4:
             #    return False
-            if abs(x[i]-x[j])>.1:
+            if abs(x[i]-x[j])>maxDiffX:
                 return False
             dph = e_ph[i] - e_ph[j]
             dph += 2*np.pi*(dph<-np.pi)-2*np.pi*(dph>np.pi)
             dth = q_th[i] - q_th[j]
             th = (q_th[i]+q_th[j])/2
-            if np.hypot(dth,dph*np.sin(th))>3*np.pi/180:
+            if np.hypot(dth,dph*np.sin(th))>maxDiffAngle*np.pi/180:
                 return False
             #if abs(dph) > 30*np.pi/180:
             #    #print("skipping due to phi mismatch")
@@ -243,6 +255,8 @@ if __name__ == '__main__':
     j0=0
     singleThread=False
     electronCuts=False
+    maxDiffAngle=3
+    maxDiffX=0.1
     for arg in sys.argv[2:]:
         if '-N=' in arg:
             maxEvents=int(arg[3:])
@@ -253,8 +267,12 @@ if __name__ == '__main__':
         elif arg == '-e':
             electronCuts=True
             print("use electron cuts")
+        elif '--dX=' in arg:
+            maxDiffX = float(arg[5:])
+        elif '--dAngle=' in arg:
+            maxDiffAngle = float(arg[9:])
     def process(j0,i):
-        df_mixed = mix_from_singles(df, binvars=''.split(), nbins=1,maxEvents=maxEvents, nAssocPerTrigger=1,j0=j0,electronCuts=electronCuts)
+        df_mixed = mix_from_singles(df, binvars=''.split(), nbins=1,maxEvents=maxEvents, nAssocPerTrigger=1,j0=j0,electronCuts=electronCuts,maxDiffX=maxDiffX,maxDiffAngle=maxDiffAngle)
         filei=outfile +("%s.pkl"%i)                                                   
         pd.to_pickle(df_mixed,filei)
         print("wrote to file "+filei)
@@ -271,8 +289,8 @@ if __name__ == '__main__':
             process.join()
 
     else :
-        df_mixed = mix_from_singles(df, binvars=''.split(), nbins=1,maxEvents=maxEvents, nAssocPerTrigger=nAssocPerTrigger,electronCuts=electronCuts)
-        df_mixed.to_root(outfile,key='dihadrons')
+        df_mixed = mix_from_singles(df, binvars=''.split(), nbins=1,maxEvents=maxEvents, nAssocPerTrigger=nAssocPerTrigger,electronCuts=electronCuts,maxDiffX=maxDiffX,maxDiffAngle=maxDiffAngle)
+        df_mixed.to_root(outfile,'dihadrons')
         
         
     
