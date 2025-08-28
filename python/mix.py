@@ -47,7 +47,7 @@ def mixed_quantities(E, e_px, e_py, e_pz, h_px, h_py, h_pz,h_pid, h2_px, h2_py, 
     
 
 #new version
-def mix_from_singles(df, binvars=''.split(), nbins=1,maxEvents=None, nAssocPerTrigger=1,j0=0,electronCuts=False,maxDiffAngle=2,maxDiffX=.05):
+def mix_from_singles(df, binvars=''.split(), nbins=1,maxEvents=None, nAssocPerTrigger=1,j0=0,electronCuts=False,maxDiffAngle=2,maxDiffX=.05,maxDiffQ2=999):
     print("debug1:  ", electronCuts)
     start = time.perf_counter()
     if 'z' in df.columns:
@@ -113,6 +113,8 @@ def mix_from_singles(df, binvars=''.split(), nbins=1,maxEvents=None, nAssocPerTr
     def same_bin(i,j,electronCuts=False):
         #print("debug2:  ", electronCuts)
         #print("checking ", i, j)
+        if h_pid[i] not in [-211, 2212, 211] or h_pid[j] not in [-211,2212,211]:
+            return False
         if Q2[i] == Q2[j] or Q2[i] == 0 or Q2[j] == 0 or h_pid[i] == 0 or h_pid[j] == 0: #don't mix with the same event
             return False
         if h_E[i] < h_E[j]:
@@ -123,6 +125,9 @@ def mix_from_singles(df, binvars=''.split(), nbins=1,maxEvents=None, nAssocPerTr
             #    return False
             if abs(x[i]-x[j])>maxDiffX:
                 return False
+            if abs(Q2[i]-Q2[j])>maxDiffQ2:
+                return False
+                
             dph = e_ph[i] - e_ph[j]
             dph += 2*np.pi*(dph<-np.pi)-2*np.pi*(dph>np.pi)
             dth = q_th[i] - q_th[j]
@@ -257,6 +262,7 @@ if __name__ == '__main__':
     electronCuts=False
     maxDiffAngle=3
     maxDiffX=0.1
+    maxDiffQ2=999
     for arg in sys.argv[2:]:
         if '-N=' in arg:
             maxEvents=int(arg[3:])
@@ -271,8 +277,10 @@ if __name__ == '__main__':
             maxDiffX = float(arg[5:])
         elif '--dAngle=' in arg:
             maxDiffAngle = float(arg[9:])
+        elif '--dQ2=' in arg:
+            maxDiffQ2 = float(arg[6:])
     def process(j0,i):
-        df_mixed = mix_from_singles(df, binvars=''.split(), nbins=1,maxEvents=maxEvents, nAssocPerTrigger=1,j0=j0,electronCuts=electronCuts,maxDiffX=maxDiffX,maxDiffAngle=maxDiffAngle)
+        df_mixed = mix_from_singles(df, binvars=''.split(), nbins=1,maxEvents=maxEvents, nAssocPerTrigger=1,j0=j0,electronCuts=electronCuts,maxDiffX=maxDiffX,maxDiffAngle=maxDiffAngle,maxDiffQ2=maxDiffQ2)
         filei=outfile +("%s.pkl"%i)                                                   
         pd.to_pickle(df_mixed,filei)
         print("wrote to file "+filei)
@@ -289,7 +297,7 @@ if __name__ == '__main__':
             process.join()
 
     else :
-        df_mixed = mix_from_singles(df, binvars=''.split(), nbins=1,maxEvents=maxEvents, nAssocPerTrigger=nAssocPerTrigger,electronCuts=electronCuts,maxDiffX=maxDiffX,maxDiffAngle=maxDiffAngle)
+        df_mixed = mix_from_singles(df, binvars=''.split(), nbins=1,maxEvents=maxEvents, nAssocPerTrigger=nAssocPerTrigger,electronCuts=electronCuts,maxDiffX=maxDiffX,maxDiffAngle=maxDiffAngle,maxDiffQ2=maxDiffQ2)
         df_mixed.to_root(outfile,'dihadrons')
         
         
